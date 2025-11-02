@@ -1,27 +1,36 @@
-import { Metadata } from "next";
+import { loadAndCompileMDX } from "@/lib/mdx";
+import { MDXRenderer } from "@/components/mdx/MDXRenderer";
 
-export const metadata: Metadata = {
-  title: "Chapter 1: The City That Learned Too Fast - DriftCity",
-  description: "Learn about baseline distributions and drift detection using PSI and KS tests.",
-};
+export async function generateMetadata() {
+  const { frontmatter } = await loadAndCompileMDX("app/chapters/chapter-1/content.mdx");
+  return {
+    title: `Chapter 1: ${frontmatter.title} - DriftCity`,
+    description: frontmatter.description,
+  };
+}
 
-export default function Chapter1() {
+export default async function Chapter1() {
+  const { content, frontmatter } = await loadAndCompileMDX("app/chapters/chapter-1/content.mdx");
+
   return (
     <div className="chapter-page">
-      <h1>The City That Learned Too Fast</h1>
-      <p className="chapter-description">Baseline distributions & drift detection (PSI, KS test)</p>
+      <header className="chapter-header">
+        <h1>{frontmatter.title}</h1>
+        <p className="chapter-description">{frontmatter.description}</p>
+      </header>
 
-      <section className="chapter-content">
-        <p>
-          This chapter introduces the fundamental concepts of drift detection in machine learning
-          systems. We&apos;ll explore how baseline distributions shift over time and learn to detect
-          these changes using statistical tests.
-        </p>
-      </section>
+      <article className="chapter-content">
+        <MDXRenderer>{content}</MDXRenderer>
+      </article>
 
       <style>{`
         .chapter-page {
           width: 100%;
+          max-width: 900px;
+        }
+
+        .chapter-header {
+          margin-bottom: var(--space-8);
         }
 
         .chapter-page h1 {
@@ -31,11 +40,34 @@ export default function Chapter1() {
         .chapter-description {
           color: var(--color-text-secondary);
           font-size: var(--text-lg);
-          margin-bottom: var(--space-8);
+          margin-bottom: 0;
         }
 
         .chapter-content {
-          max-width: 800px;
+          line-height: var(--leading-relaxed);
+        }
+
+        .chapter-content h2 {
+          margin-top: var(--space-8);
+          margin-bottom: var(--space-4);
+          scroll-margin-top: 80px;
+        }
+
+        .chapter-content h3 {
+          margin-top: var(--space-6);
+          margin-bottom: var(--space-3);
+        }
+
+        .chapter-content p {
+          margin-bottom: var(--space-4);
+        }
+
+        .chapter-content code {
+          font-size: 0.9em;
+        }
+
+        .chapter-content > *:first-child {
+          margin-top: 0;
         }
       `}</style>
     </div>

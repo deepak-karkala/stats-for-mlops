@@ -1,0 +1,87 @@
+---
+title: The City That Learned Too Fast
+description: Baseline distributions & drift detection (PSI, KS test)
+---
+
+## Introduction
+
+Welcome to DriftCity, a fictional metropolis where algorithms learn and adapt. In this chapter, we'll explore the fundamental concept of **drift detection** — understanding when and why the data feeding your models begins to behave differently.
+
+<Aside type="info">
+**What is Drift?** Drift occurs when the statistical properties of input data or relationships between inputs and outputs change over time. This can cause even well-trained models to perform poorly.
+</Aside>
+
+## The Problem: Baseline Distributions
+
+Every machine learning model is trained on data from a specific time period with specific characteristics. We call this the **baseline distribution** — it's our reference point for "normal."
+
+```python
+# Example: Ride demand baseline
+import numpy as np
+
+baseline_demand = np.random.normal(loc=100, scale=15, size=1000)
+print(f"Mean demand: {baseline_demand.mean():.2f}")
+print(f"Std dev: {baseline_demand.std():.2f}")
+```
+
+<Callout heading="Key Insight">
+When production data starts to diverge from the baseline distribution, your model's assumptions become invalid. This is where **drift detection** becomes critical.
+</Callout>
+
+### Types of Drift in MLOps
+
+1. **Data Drift** (Covariate Shift): The distribution of input features changes
+2. **Label Drift**: The distribution of target labels changes
+3. **Concept Drift**: The relationship between features and labels changes
+
+<Aside type="warning">
+Undetected drift is one of the top causes of model degradation in production. Most teams don't realize their models have drifted until users complain!
+</Aside>
+
+## Detecting Drift: Statistical Tests
+
+### Population Stability Index (PSI)
+
+PSI measures how much a variable has shifted between two distributions. It's calculated as:
+
+```
+PSI = Σ (% current - % baseline) × ln(% current / % baseline)
+```
+
+**Interpretation:**
+- PSI < 0.1: No significant drift
+- PSI 0.1-0.25: Small drift, monitor
+- PSI > 0.25: Significant drift, investigate
+
+### Kolmogorov-Smirnov Test
+
+The KS test compares two distributions and returns:
+- **KS Statistic**: Maximum distance between cumulative distributions (0 to 1)
+- **p-value**: Probability that distributions are the same
+
+<Figure caption="Visual comparison of baseline vs drifted distributions">
+  <div style={{
+    padding: '40px',
+    textAlign: 'center',
+    backgroundColor: 'var(--color-bg-secondary)',
+    borderRadius: 'var(--radius-md)',
+    marginBottom: 'var(--space-4)'
+  }}>
+    📊 Interactive visualization would render here
+  </div>
+</Figure>
+
+<Aside type="tip">
+**Pro Tip:** PSI is better for categorical variables and smaller samples, while KS test works well for continuous distributions. Many teams use both!
+</Aside>
+
+## What's Next?
+
+In the next chapter, we'll see what happens when external events (like weather changes) affect the distribution of features while relationships remain stable. We call this **covariate drift**.
+
+<Callout heading="Summary">
+- Baseline distributions establish what "normal" looks like
+- Drift detection alerts us when production data diverges from training data
+- PSI and KS test are key statistical tools for detection
+- Undetected drift silently degrades model performance
+</Callout>
