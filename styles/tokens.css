@@ -1,0 +1,284 @@
+/* DriftCity - Design Tokens */
+/* Color palette, spacing, typography, and component tokens */
+
+:root {
+  /* ============================================
+     COLOR TOKENS
+     ============================================ */
+
+  /* Primary Colors */
+  --color-blue: #00d8ff;
+  --color-blue-dark: #007b92;
+  --color-blue-light: #33e0ff;
+
+  /* Alert/Warning Colors */
+  --color-amber: #ffb347;
+  --color-amber-dark: #a36200;
+  --color-amber-light: #ffc870;
+
+  /* Error/Danger Colors */
+  --color-red: #ff4747;
+  --color-red-dark: #a30000;
+  --color-red-light: #ff7171;
+
+  /* Success Colors */
+  --color-green: #32cd32;
+  --color-green-dark: #228b22;
+  --color-green-light: #5cdb5c;
+
+  /* Neutral Colors */
+  --color-text: #1a1a1a;
+  --color-text-secondary: #5a5a5a;
+  --color-text-tertiary: #8a8a8a;
+
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f9f9f9;
+  --color-bg-tertiary: #f2f3f5;
+
+  --color-border: #e0e0e0;
+  --color-border-light: #f0f0f0;
+
+  --color-sidebar: #f2f3f5;
+
+  /* Semantic Color Aliases */
+  --color-success: var(--color-green);
+  --color-warning: var(--color-amber);
+  --color-error: var(--color-red);
+  --color-info: var(--color-blue);
+
+  /* ============================================
+     SPACING SCALE
+     ============================================ */
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Common spacing aliases */
+  --gap-xs: var(--space-2);
+  --gap-sm: var(--space-3);
+  --gap-md: var(--space-4);
+  --gap-lg: var(--space-6);
+  --gap-xl: var(--space-8);
+  --gap-2xl: var(--space-12);
+
+  --padding-xs: var(--space-2);
+  --padding-sm: var(--space-3);
+  --padding-md: var(--space-4);
+  --padding-lg: var(--space-6);
+  --padding-xl: var(--space-8);
+  --padding-2xl: var(--space-12);
+
+  --margin-xs: var(--space-2);
+  --margin-sm: var(--space-3);
+  --margin-md: var(--space-4);
+  --margin-lg: var(--space-6);
+  --margin-xl: var(--space-8);
+  --margin-2xl: var(--space-12);
+
+  /* ============================================
+     TYPOGRAPHY SCALE
+     ============================================ */
+
+  /* Font Families */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
+    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  --font-display: "Orbitron", system-ui, sans-serif;
+  --font-mono: "Monaco", "Courier New", monospace;
+
+  /* Font Sizes */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 28px;
+  --text-4xl: 32px;
+  --text-5xl: 36px;
+  --text-6xl: 48px;
+
+  /* Line Heights */
+  --leading-tight: 1.2;
+  --leading-snug: 1.4;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.8;
+  --leading-loose: 2;
+
+  /* Font Weights */
+  --weight-light: 300;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+
+  /* ============================================
+     BORDER RADIUS
+     ============================================ */
+
+  --radius-none: 0px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ============================================
+     SHADOW / ELEVATION
+     ============================================ */
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.2);
+
+  /* ============================================
+     TRANSITIONS / TIMING
+     ============================================ */
+
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+  --easing-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --easing-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --easing-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ============================================
+     LAYOUT DIMENSIONS
+     ============================================ */
+
+  /* Sidebar */
+  --sidebar-width: 280px;
+  --sidebar-width-mobile: 100%;
+
+  /* Header */
+  --header-height: 64px;
+
+  /* Content max-widths */
+  --content-max-width: 1040px;
+  --content-min-width: 320px;
+
+  /* Breakpoints (for reference in media queries) */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* ============================================
+     Z-INDEX SCALE
+     ============================================ */
+
+  --z-hide: -1;
+  --z-base: 0;
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal: 1040;
+  --z-popover: 1050;
+  --z-tooltip: 1060;
+
+  /* ============================================
+     COMPONENT-SPECIFIC TOKENS
+     ============================================ */
+
+  /* Buttons */
+  --btn-padding-sm: var(--space-2) var(--space-3);
+  --btn-padding-md: var(--space-3) var(--space-4);
+  --btn-padding-lg: var(--space-4) var(--space-6);
+  --btn-radius: var(--radius-md);
+  --btn-border-width: 1px;
+
+  /* Cards */
+  --card-padding: var(--space-6);
+  --card-radius: var(--radius-lg);
+  --card-shadow: var(--shadow-md);
+  --card-border-width: 1px;
+  --card-border-color: var(--color-border-light);
+
+  /* Code blocks */
+  --code-font-size: 14px;
+  --code-line-height: 1.6;
+  --code-padding: var(--space-4);
+  --code-radius: var(--radius-md);
+  --code-bg: #0f1419;
+  --code-text: #e8e8e8;
+
+  /* Forms */
+  --input-height: 40px;
+  --input-padding: 0 var(--space-3);
+  --input-radius: var(--radius-md);
+  --input-border-color: var(--color-border);
+  --input-border-width: 1px;
+  --input-focus-color: var(--color-blue);
+  --input-focus-shadow: 0 0 0 3px rgba(0, 216, 255, 0.1);
+
+  /* Navigation */
+  --nav-link-padding: var(--space-3) var(--space-4);
+  --nav-link-radius: var(--radius-md);
+  --nav-link-active-color: var(--color-blue);
+  --nav-link-text-color: var(--color-text);
+  --nav-link-hover-bg: var(--color-bg-secondary);
+
+  /* Tables */
+  --table-border-color: var(--color-border);
+  --table-row-hover-bg: var(--color-bg-secondary);
+  --table-cell-padding: var(--space-3);
+
+  /* Modals */
+  --modal-padding: var(--space-8);
+  --modal-radius: var(--radius-xl);
+  --modal-shadow: var(--shadow-xl);
+
+  /* Tooltips */
+  --tooltip-bg: rgba(26, 26, 26, 0.95);
+  --tooltip-text: var(--color-bg);
+  --tooltip-padding: var(--space-2) var(--space-3);
+  --tooltip-radius: var(--radius-sm);
+  --tooltip-font-size: var(--text-sm);
+}
+
+/* ============================================
+   DARK MODE (Future support)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Override colors for dark mode */
+    --color-text: #f5f5f5;
+    --color-text-secondary: #b0b0b0;
+    --color-text-tertiary: #808080;
+
+    --color-bg: #121212;
+    --color-bg-secondary: #1e1e1e;
+    --color-bg-tertiary: #2a2a2a;
+
+    --color-border: #3a3a3a;
+    --color-border-light: #2a2a2a;
+
+    --color-sidebar: #1e1e1e;
+
+    --code-bg: #1e1e1e;
+    --code-text: #e8e8e8;
+
+    --table-row-hover-bg: var(--color-bg-secondary);
+
+    --tooltip-bg: rgba(245, 245, 245, 0.95);
+    --tooltip-text: var(--color-bg);
+  }
+}

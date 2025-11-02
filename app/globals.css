@@ -1,7 +1,19 @@
+/* Import design tokens */
+@import "../styles/tokens.css";
+
+/* ============================================
+   CSS RESET
+   ============================================ */
+
 * {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+}
+
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html,
@@ -10,15 +22,317 @@ body {
   overflow-x: hidden;
 }
 
-body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
-    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+html {
+  scroll-behavior: smooth;
 }
 
+/* ============================================
+   BODY & BASE TYPOGRAPHY
+   ============================================ */
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color var(--duration-normal) var(--easing-ease-in-out),
+    color var(--duration-normal) var(--easing-ease-in-out);
+}
+
+/* ============================================
+   HEADINGS
+   ============================================ */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-4);
+  color: var(--color-text);
+}
+
+h1 {
+  font-size: var(--text-5xl);
+  margin-top: var(--space-8);
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: var(--text-4xl);
+  margin-top: var(--space-6);
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-size: var(--text-3xl);
+  margin-top: var(--space-5);
+}
+
+h4 {
+  font-size: var(--text-2xl);
+  margin-top: var(--space-4);
+  font-weight: var(--weight-semibold);
+}
+
+h5 {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+}
+
+h6 {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ============================================
+   TEXT ELEMENTS
+   ============================================ */
+
+p {
+  margin-bottom: var(--space-4);
+  line-height: var(--leading-relaxed);
+}
+
+p + p {
+  margin-top: var(--space-2);
+}
+
+small {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+strong,
+b {
+  font-weight: var(--weight-bold);
+}
+
+em,
+i {
+  font-style: italic;
+}
+
+/* ============================================
+   LINKS
+   ============================================ */
+
 a {
-  color: inherit;
+  color: var(--color-blue);
   text-decoration: none;
+  transition: color var(--duration-fast) var(--easing-ease-in-out);
+  outline-offset: 2px;
+}
+
+a:hover {
+  color: var(--color-blue-light);
+  text-decoration: underline;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--color-blue);
+}
+
+a:active {
+  color: var(--color-blue-dark);
+}
+
+/* ============================================
+   LISTS
+   ============================================ */
+
+ul,
+ol {
+  margin-left: var(--space-6);
+  margin-bottom: var(--space-4);
+}
+
+li {
+  margin-bottom: var(--space-2);
+}
+
+li > ul,
+li > ol {
+  margin-top: var(--space-2);
+  margin-bottom: 0;
+}
+
+/* ============================================
+   CODE & PRE
+   ============================================ */
+
+code {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-blue);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+pre {
+  background-color: var(--code-bg);
+  color: var(--code-text);
+  padding: var(--code-padding);
+  border-radius: var(--code-radius);
+  overflow-x: auto;
+  margin-bottom: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--code-font-size);
+  line-height: var(--code-line-height);
+}
+
+pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* ============================================
+   BLOCKQUOTE
+   ============================================ */
+
+blockquote {
+  border-left: 4px solid var(--color-blue);
+  padding-left: var(--space-4);
+  margin-left: 0;
+  margin-bottom: var(--space-4);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* ============================================
+   TABLES
+   ============================================ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--space-6);
+  font-size: var(--text-sm);
+}
+
+th,
+td {
+  padding: var(--table-cell-padding);
+  text-align: left;
+  border-bottom: 1px solid var(--table-border-color);
+}
+
+th {
+  background-color: var(--color-bg-secondary);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+tbody tr:hover {
+  background-color: var(--table-row-hover-bg);
+}
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
+
+input,
+textarea,
+select {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  border: var(--input-border-width) solid var(--input-border-color);
+  border-radius: var(--input-radius);
+  padding: var(--input-padding);
+  transition:
+    border-color var(--duration-fast) var(--easing-ease-in-out),
+    box-shadow var(--duration-fast) var(--easing-ease-in-out);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--input-focus-color);
+  box-shadow: var(--input-focus-shadow);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+button {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  border: none;
+  border-radius: var(--btn-radius);
+  padding: var(--btn-padding-md);
+  transition: all var(--duration-fast) var(--easing-ease-in-out);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   HR / DIVIDERS
+   ============================================ */
+
+hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: var(--space-6) 0;
+}
+
+/* ============================================
+   IMAGES
+   ============================================ */
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ============================================
+   FOCUS VISIBLE RING (for accessibility)
+   ============================================ */
+
+:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 2px;
 }
