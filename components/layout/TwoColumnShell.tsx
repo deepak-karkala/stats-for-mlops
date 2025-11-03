@@ -54,7 +54,7 @@ export const TwoColumnShell = ({ children }: TwoColumnShellProps) => {
           }
         }
 
-        /* Tablet & mobile */
+        /* Tablet and mobile */
         @media (max-width: 768px) {
           .shell-container {
             flex-direction: column;

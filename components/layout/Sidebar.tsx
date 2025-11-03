@@ -239,7 +239,7 @@ export const Sidebar = () => {
           z-index: calc(var(--z-dropdown) - 1);
         }
 
-        /* Tablet & below */
+        /* Tablet and below */
         @media (max-width: 768px) {
           .sidebar-toggle {
             display: flex;
