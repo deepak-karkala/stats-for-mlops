@@ -1,0 +1,113 @@
+---
+title: The Algorithm's Identity Crisis
+description: Concept drift detection & model performance degradation
+---
+
+## Introduction
+
+Years passed in DriftCity, and the city transformed. New transportation competitors emerged, user preferences shifted, and the fundamental relationship between features (like distance and time of day) and ride demand changed. This is **concept drift** — when the underlying decision boundary itself moves, making even perfectly stable feature distributions inadequate.
+
+<Aside type="info">
+**Concept Drift** occurs when the relationship between input features and target labels changes over time. Even if feature distributions remain identical, the model's learned patterns become obsolete.
+</Aside>
+
+## The Problem: Changing User Behavior
+
+Your ride-share model learned that Friday nights have highest demand. But as competitors saturated the market and user preferences shifted, that relationship weakened. The statistical distribution of trips remained similar, but *why* users request rides changed fundamentally.
+
+```python
+# Example: Same feature distribution, different relationship
+import numpy as np
+
+# Both periods have similar distance distributions
+distance_2022 = np.random.lognormal(mean=1.5, sigma=0.8, size=1000)
+distance_2024 = np.random.lognormal(mean=1.5, sigma=0.8, size=1000)
+
+# But the demand relationship changed
+demand_2022 = 50 + 30 * distance_2022 + np.random.normal(0, 10, 1000)
+demand_2024 = 30 + 20 * distance_2024 + np.random.normal(0, 15, 1000)
+
+print(f"Coefficient (2022): 30 → (2024): 20")
+```
+
+<Callout heading="Key Insight">
+Concept drift is the most insidious type of drift because traditional accuracy metrics may not immediately reveal it. Performance degrades gradually as the learned relationships become stale.
+</Callout>
+
+### Detecting Concept Drift Through Model Performance
+
+Track these signals to detect concept drift:
+
+1. **RMSE/MAE Trends**: Rising prediction errors on validation windows
+2. **Residual Patterns**: Systematic errors in specific segments
+3. **Feature Importance Shifts**: Which features matter changes over time
+4. **Prediction Bias**: Consistent over/under predictions
+
+<Aside type="warning">
+Never rely solely on overall metrics! Concept drift often manifests as systematic errors in specific segments or time periods before affecting aggregate performance.
+</Aside>
+
+## Statistical Detection: Residual Analysis
+
+Examine prediction residuals for patterns:
+
+```python
+# Calculate rolling RMSE to detect concept drift
+residuals = actual - predicted
+rolling_rmse = residuals.rolling(window=28).std()  # Weekly windows
+
+# High/increasing residuals indicate model degradation
+print(f"RMSE trend: {rolling_rmse.mean():.3f}")
+```
+
+**Key indicators of concept drift:**
+- Residuals no longer centered at zero (systematic bias)
+- Variance of residuals increasing over time
+- Residuals clustered in specific segments (time, geography, etc.)
+
+<Figure caption="Residual heatmap reveals systematic prediction errors indicating concept drift">
+  <div style={{
+    padding: '40px',
+    textAlign: 'center',
+    backgroundColor: 'var(--color-bg-secondary)',
+    borderRadius: 'var(--radius-md)',
+    marginBottom: 'var(--space-4)'
+  }}>
+    🔥 Residual heatmap visualization would render here
+  </div>
+</Figure>
+
+## Quantifying Model Degradation
+
+Track aggregate performance metrics in rolling windows:
+
+```python
+# Rolling window performance evaluation
+for window in split_data_into_windows(data):
+    window_rmse = calculate_rmse(predictions[window], actuals[window])
+    window_mae = calculate_mae(predictions[window], actuals[window])
+    print(f"RMSE: {window_rmse:.3f}, MAE: {window_mae:.3f}")
+```
+
+<Aside type="tip">
+**Pro Tip:** Use 7-28 day rolling windows depending on your data frequency. Larger windows smooth noise, smaller windows catch rapid changes.
+</Aside>
+
+## When to Retrain
+
+Concept drift triggers model retraining when:
+- RMSE increases by >15% over baseline
+- Residuals show systematic patterns
+- Residual variance increases significantly
+- Performance degrades in critical segments
+
+## Next Steps
+
+Chapter 4 shifts focus to controlled experimentation and detecting when *intentional* changes (A/B tests) cause drift.
+
+<Callout heading="Summary">
+- Concept drift changes the relationship between features and labels
+- Track residuals and performance trends to detect it
+- Systematic prediction bias and increasing variance are key signals
+- Performance monitoring across segments reveals drift before aggregate metrics
+</Callout>

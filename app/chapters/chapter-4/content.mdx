@@ -1,0 +1,134 @@
+---
+title: The Great Experiment
+description: A/B testing, sample ratio mismatch, and statistical power
+---
+
+## Introduction
+
+DriftCity's leadership decided: "Let's test a new pricing algorithm on 10% of users." This marks the beginning of controlled experimentation in production systems. Unlike drift, which is unintended, **A/B testing** introduces intentional changes while carefully monitoring outcomes. But with power comes responsibility — poor experiment design can masquerade results as statistically significant when they're merely noise.
+
+<Aside type="info">
+**A/B Testing** compares two variants (A: control, B: treatment) to measure causal impact of a change. Statistical rigor ensures we don't chase false positives or ignore true effects.
+</Aside>
+
+## The Problem: Reliability of Results
+
+Your new pricing algorithm shows a 5% improvement in revenue per ride. But is it real? Could randomness alone explain this difference? This is where **statistical power** and **sample size** become critical.
+
+```python
+# Example: Testing revenue impact
+control_revenue = [12.50, 13.20, 11.80, ...]  # 1000 samples
+treatment_revenue = [13.10, 13.80, 12.40, ...]  # 100 samples (smaller)
+
+control_mean = np.mean(control_revenue)  # $12.50
+treatment_mean = np.mean(treatment_revenue)  # $13.10
+
+# But unequal sample sizes complicate statistical testing
+```
+
+<Callout heading="Key Insight">
+Even if a 5% improvement is real, insufficient sample sizes or imbalanced allocations can lead to false conclusions. Rigorous experimental design prevents costly mistakes.
+</Callout>
+
+### Sample Ratio Mismatch (SRM)
+
+A critical issue in online experiments: **Sample Ratio Mismatch** occurs when your actual treatment/control split doesn't match your intended allocation.
+
+```
+Intended: 50% control, 50% treatment
+Actual: 45% control, 55% treatment
+```
+
+**Causes:**
+- User segmentation bugs
+- Regional traffic imbalances
+- Bot traffic patterns
+- Browser caching issues
+
+<Aside type="warning">
+SRM often indicates a bug in your experiment infrastructure, not your algorithm. Always check SRM before interpreting results!
+</Aside>
+
+## Statistical Power and Effect Size
+
+**Power** measures the probability of detecting a true effect:
+
+- **High Power (80-90%)**: Likely to detect real differences
+- **Low Power (<50%)**: May miss real improvements
+- **Type I Error (α)**: False positive rate (typically 5%)
+- **Type II Error (β)**: False negative rate (typically 10-20%)
+
+```python
+# Example: Power calculation for detecting 5% revenue lift
+from scipy.stats import norm
+
+# Given baseline mean and standard deviation
+baseline_mean = 12.50
+baseline_std = 3.20
+effect_size = 0.05 * baseline_mean  # 5% lift = $0.625
+
+# Required sample size for 80% power
+required_n = estimate_sample_size(
+    effect_size=effect_size,
+    std_dev=baseline_std,
+    alpha=0.05,  # 5% significance level
+    power=0.80   # 80% power
+)
+print(f"Sample size needed per group: {required_n}")
+```
+
+<Figure caption="Power curve shows relationship between sample size and ability to detect effects">
+  <div style={{
+    padding: '40px',
+    textAlign: 'center',
+    backgroundColor: 'var(--color-bg-secondary)',
+    borderRadius: 'var(--radius-md)',
+    marginBottom: 'var(--space-4)'
+  }}>
+    📊 Power curve visualization would render here
+  </div>
+</Figure>
+
+## Testing Methodology
+
+### Pre-experiment Checklist
+
+1. **Define hypothesis** clearly and precisely
+2. **Calculate required sample size** for desired power
+3. **Check for SRM** between control and treatment
+4. **Specify primary and secondary metrics**
+5. **Set significance level (α)** and power target
+
+### Statistical Tests
+
+```python
+# T-test for continuous metrics (revenue, time spent)
+from scipy.stats import ttest_ind
+t_stat, p_value = ttest_ind(control_revenue, treatment_revenue)
+
+# Chi-square test for categorical metrics (conversion rate)
+from scipy.stats import chi2_contingency
+chi2, p_value, dof, expected = chi2_contingency(contingency_table)
+```
+
+<Aside type="tip">
+**Pro Tip:** Always run pre-experiment power calculations. Running an experiment with 30% power is worse than not running it — you're likely to make Type II errors (missing real effects).
+</Aside>
+
+## Common Pitfalls
+
+1. **Peeking at results early**: Increases false positive rates
+2. **Multiple comparisons**: Without correction, each additional metric increases false positive probability
+3. **Unequal variance**: Choose appropriate statistical tests
+4. **Selection bias**: Exclude users mid-experiment invalidates results
+
+## Next Steps
+
+Chapter 5 introduces advanced techniques like **CUPED** to reduce variance and detect smaller effects with fewer samples.
+
+<Callout heading="Summary">
+- A/B testing requires careful statistical planning before execution
+- Sample Ratio Mismatch signals bugs in experiment infrastructure
+- Power analysis determines if sample size is sufficient for desired effect
+- Pre-experiment rigor prevents costly false conclusions
+</Callout>
