@@ -248,6 +248,7 @@ import ToggleGroup from "../ui/ToggleGroup";
 // Import plot components
 import HistogramPanel from "../plots/HistogramPanel";
 import HistogramPanelWithToggle from "../plots/HistogramPanelWithToggle";
+import HistogramCompare from "../plots/HistogramCompare";
 import DriftGauge from "../plots/DriftGauge";
 
 export const mdxComponents = {
@@ -260,5 +261,6 @@ export const mdxComponents = {
   ToggleGroup,
   HistogramPanel,
   HistogramPanelWithToggle,
+  HistogramCompare,
   DriftGauge,
 };

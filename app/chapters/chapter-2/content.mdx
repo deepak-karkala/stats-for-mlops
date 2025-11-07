@@ -1,101 +1,266 @@
 ---
-title: When Rain Fell Harder
-description: Covariate drift detection & environmental impact on model performance
+title: The Weather Event
+description: Covariate shift detection (PSI, KS test, overlay histograms)
 ---
 
-## Introduction
-
-In DriftCity, the rainy season arrived unexpectedly. While the relationship between weather patterns and ride demand remained the same, the underlying distribution of features shifted dramatically. This is **covariate drift** — when input features change but the model's learned relationship stays constant.
-
-<Aside type="info">
-**Covariate Drift** occurs when the distribution of input features changes between training and production, but the conditional distribution of labels given features remains the same.
+<Aside tone="story">
+  It started with rain. Just weather—the kind the system had seen before. But this time, DriftCity's
+  predictions got soaked. Riders changed their behavior, and the model's inputs no longer matched the world it learned.
 </Aside>
 
-## The Problem: Seasonal Changes
-
-Your ride-share model was trained on summer data with consistent temperature and precipitation patterns. When monsoon season arrives, temperature ranges shift, rainfall increases, and user behavior adapts. The model's core logic still applies, but the input distribution has fundamentally changed.
-
-```python
-# Example: Feature distribution shift during rainy season
-import numpy as np
-
-# Summer baseline
-summer_rainfall = np.random.normal(loc=2, scale=0.5, size=1000)
-
-# Monsoon season
-monsoon_rainfall = np.random.normal(loc=8, scale=2, size=1000)
-
-print(f"Summer mean: {summer_rainfall.mean():.2f}")
-print(f"Monsoon mean: {monsoon_rainfall.mean():.2f}")
-```
-
-<Callout heading="Key Insight">
-Covariate drift is particularly dangerous because it's often undetected by traditional performance metrics if the relationship between features and labels remains stable.
+<Callout title="What you'll learn">
+  - How to detect **covariate drift**—changes in input distributions P(X)
+  - How to compute **Population Stability Index (PSI)** and **Kolmogorov–Smirnov (KS)** tests
+  - How to interpret PSI thresholds and visual patterns of shift
+  - Why covariate drift is often a **precursor to concept drift**
 </Callout>
 
-### Detecting Covariate Drift Over Time
+## 1. What is Covariate Drift?
 
-Unlike point-in-time checks, monitoring drift trends reveals patterns:
-- Gradual seasonal shifts
-- Sudden environmental events
-- Long-term demographic changes
+Covariate drift occurs when the **distribution of features P(X)** changes, but the underlying relationship between features and target P(Y | X) remains the same — for now.
+The model's learned patterns still apply, but its inputs no longer represent the world it trained on.
 
-<Aside type="warning">
-Monitoring a single drift metric at one point in time can mask systematic drift patterns. Always track drift trends over time!
-</Aside>
+In DriftCity, a sudden rainstorm altered rider behavior:
+- Fewer people took short trips (walking became safer than waiting for a ride)
+- More people took long trips (public transit was disrupted)
+- Surge pricing responded to demand shifts
 
-## Statistical Measures: PSI Trends
+The _relationships_ between distance and fare still held, but the **input distribution** moved.
 
-**Population Stability Index** becomes powerful when tracked continuously. By computing PSI between rolling windows and a baseline, you can detect:
+## 2. Compare Baseline vs Rainstorm
 
-1. **Gradual drift**: PSI slowly increasing over weeks
-2. **Sudden shift**: PSI spike after an event
-3. **Cyclical patterns**: PSI peaks at predictable times (seasonal)
+Below are baseline histograms (blue) overlaid with rainstorm data (amber). Toggle between features to see where the shift is most pronounced.
 
-**Interpretation guidelines:**
-- PSI < 0.1: Distribution stable
-- PSI 0.1-0.25: Noticeable drift, investigate causes
-- PSI > 0.25: Significant drift, consider model retraining
+<HistogramCompare
+  id="baseline-rainstorm-compare"
+  referenceUrl="/chapters/chapter-2/fixtures/rides_baseline.csv"
+  currentUrl="/chapters/chapter-2/fixtures/rides_rainstorm.csv"
+  height={360}
+  features={[
+    { label: "trip_distance_km", value: "trip_distance_km" },
+    { label: "surge_multiplier", value: "surge_multiplier" },
+    { label: "fare_amount", value: "fare_amount" },
+  ]}
+  defaultFeature="trip_distance_km"
+/>
 
-<Figure caption="PSI trend over time reveals drift patterns and seasonal cycles">
-  <div style={{
-    padding: '40px',
-    textAlign: 'center',
-    backgroundColor: 'var(--color-bg-secondary)',
-    borderRadius: 'var(--radius-md)',
-    marginBottom: 'var(--space-4)'
-  }}>
-    📈 PSI trend visualization would render here
-  </div>
-</Figure>
+**Observations:**
+- **trip_distance_km:** Rainstorm shows fewer short rides (< 2 km) and a heavier right-tail of long trips (> 10 km)
+- **surge_multiplier:** Rain increased surge pricing; higher mean and wider spread
+- **fare_amount:** Shifted right due to both distance and surge changes
 
-## Understanding Feature Distributions
+The model trained on dry-weather patterns will now encounter more extreme inputs — and may produce less accurate predictions or intervals.
 
-When comparing distributions directly, use histograms and density plots:
+## 3. Quantifying Shift with PSI and KS
+
+Population Stability Index (PSI) measures the difference between a reference (baseline) distribution and a current distribution. It's widely used in production monitoring because:
+
+- **Non-parametric**: doesn't assume any specific distribution shape
+- **Symmetric**: treats both directions of change equally
+- **Interpretable**: thresholds are easy to operationalize
+
+<DriftGauge
+  id="psi-gauge-ch2"
+  referenceUrl="/chapters/chapter-2/fixtures/rides_baseline.csv"
+  currentUrl="/chapters/chapter-2/fixtures/rides_rainstorm.csv"
+  feature="trip_distance_km"
+  thresholds={{ warn: 0.1, alert: 0.25 }}
+/>
+
+**PSI Interpretation:**
+- **PSI < 0.10:** Stable distribution (✅ no action)
+- **0.10 ≤ PSI < 0.25:** Moderate drift (⚠️ watch and log)
+- **PSI ≥ 0.25:** Major shift (🚨 investigate, possibly retrain)
+
+**Kolmogorov–Smirnov Test** provides a formal statistical hypothesis test:
 
 ```python
-# Compare distributions visually
-import matplotlib.pyplot as plt
+from scipy.stats import ks_2samp
 
-plt.hist(summer_rainfall, bins=30, alpha=0.5, label='Summer')
-plt.hist(monsoon_rainfall, bins=30, alpha=0.5, label='Monsoon')
-plt.xlabel('Daily Rainfall (inches)')
-plt.ylabel('Frequency')
-plt.legend()
-plt.show()
+ks_stat, p_value = ks_2samp(
+    baseline["trip_distance_km"],
+    rainstorm["trip_distance_km"]
+)
+# Example result: statistic ≈ 0.36, p < 0.001
+# Interpretation: reject H0 (same distribution)
 ```
 
-<Aside type="tip">
-**Pro Tip:** For multimodal distributions, histogram comparison gives intuitive insight. For continuous variables, consider quantile-quantile plots to detect tail differences.
-</Aside>
+Use **KS** for statistical rigor; use **PSI** for operational dashboards with human-friendly thresholds.
 
-## Next Steps
+## 4. Monitoring Drift Over Time
 
-Chapter 3 explores what happens when the relationship between features and labels themselves changes — true **concept drift**.
+A single PSI comparison is a snapshot. Real value emerges when you track PSI daily or weekly and watch the trend.
 
-<Callout heading="Summary">
-- Covariate drift shifts input distributions while relationships remain stable
-- PSI tracking over time reveals drift patterns and seasonality
-- Histogram comparison provides visual confirmation of distribution shifts
-- Environmental and seasonal events are common drift causes
+In this example, the rainstorm event (day 10) caused a sudden spike. Without monitoring, the shift might go unnoticed until model performance degrades weeks later.
+
+<DriftGauge
+  id="psi-gauge-ch2-today"
+  referenceUrl="/chapters/chapter-2/fixtures/rides_baseline.csv"
+  currentUrl="/chapters/chapter-2/fixtures/rides_rainstorm.csv"
+  feature="surge_multiplier"
+  thresholds={{ warn: 0.1, alert: 0.25 }}
+/>
+
+A sustained upward drift slope warns that inputs are diverging — a signal for:
+- **Data engineering:** investigate upstream changes
+- **Retraining:** incorporate recent data into model updates
+- **Monitoring:** set tighter alerting thresholds
+
+## 5. Run It Yourself
+
+<CodeTabs
+  tabs={[
+    {
+      label: "Python: generate rainstorm dataset",
+      language: "python",
+      code: `import numpy as np, pandas as pd
+rng = np.random.default_rng(9)
+
+# Load baseline
+df0 = pd.read_csv("rides_baseline.csv")
+N = len(df0)
+
+# Simulate rain: fewer short trips, more long ones
+trip = np.clip(rng.normal(7.8, 2.5, N), 0.3, None)
+surge = np.clip(rng.lognormal(mean=0.12, sigma=0.20, size=N), 1.0, None)
+fare = np.clip(38 + trip*3.5 + rng.normal(0, 6, N), 5, None)
+
+# Create rainstorm dataset
+df1 = df0.copy()
+df1["trip_distance_km"] = trip
+df1["surge_multiplier"] = surge
+df1["fare_amount"] = fare
+df1.to_csv("rides_rainstorm.csv", index=False)
+print("Wrote rides_rainstorm.csv")`
+    },
+    {
+      label: "Python: compute PSI for all features",
+      language: "python",
+      code: `import pandas as pd, numpy as np
+from scipy.stats import ks_2samp
+
+# Load both datasets
+baseline = pd.read_csv("rides_baseline.csv")
+rainstorm = pd.read_csv("rides_rainstorm.csv")
+
+# Function to compute PSI
+def psi(baseline_vals, current_vals, bins=10):
+    baseline_vals = baseline_vals.dropna()
+    current_vals = current_vals.dropna()
+
+    # Fixed bin edges from baseline quantiles
+    qs = np.quantile(baseline_vals, np.linspace(0, 1, bins + 1))
+    e = np.histogram(baseline_vals, bins=qs)[0].astype(float)
+    a = np.histogram(current_vals, bins=qs)[0].astype(float)
+
+    # Laplace smoothing to avoid zeros
+    e = (e + 1e-6) / (e.sum() + bins*1e-6)
+    a = (a + 1e-6) / (a.sum() + bins*1e-6)
+
+    return float(np.sum((a - e) * np.log(a / e)))
+
+# Compute PSI for key features
+features = ["trip_distance_km", "surge_multiplier", "fare_amount"]
+for feat in features:
+    psi_val = psi(baseline[feat], rainstorm[feat])
+    ks_stat, ks_p = ks_2samp(baseline[feat], rainstorm[feat])
+    print(f"{feat:20s} PSI={psi_val:.4f}  KS={ks_stat:.4f} (p={ks_p:.2e})")`
+    },
+    {
+      label: "Node: PSI via Plotly spec",
+      language: "ts",
+      code: `// Use the same PSI calculation from Chapter 1
+// in a component like DriftGauge
+
+// Plotly spec for overlay histogram:
+const OverlayHistogramSpec = (ref: number[], cur: number[], feature: string) => ({
+  data: [
+    {
+      type: "histogram" as const,
+      x: ref,
+      nbinsx: 40,
+      name: "Baseline",
+      opacity: 0.5,
+      marker: { color: "#00D8FF" },
+    },
+    {
+      type: "histogram" as const,
+      x: cur,
+      nbinsx: 40,
+      name: "Rainstorm",
+      opacity: 0.5,
+      marker: { color: "#FFB347" },
+    },
+  ],
+  layout: {
+    barmode: "overlay" as const,
+    height: 360,
+    margin: { t: 10, r: 10, b: 40, l: 50 },
+    xaxis: { title: feature },
+    yaxis: { title: "count" },
+    legend: { orientation: "h" as const },
+  },
+  config: { displayModeBar: false, responsive: true },
+});`
+    }
+  ]}
+/>
+
+## 6. Real-World Practice: Drift Monitoring in Production
+
+Major tech companies use PSI and KS as part of their model monitoring stacks:
+
+<DataTable
+  caption="Industry drift monitoring implementations"
+  columns={[
+    { key: "company", label: "Company" },
+    { key: "implementation", label: "Implementation" },
+    { key: "insight", label: "Key Insight" },
+  ]}
+  rows={[
+    {
+      company: "Uber Michelangelo",
+      implementation: "Nightly feature monitoring jobs compute PSI/KS for all continuous features",
+      insight: "Automate drift alerts before training pipelines run",
+    },
+    {
+      company: "DoorDash",
+      implementation: "Streaming feature store includes drift detectors with 7-day moving PSI average",
+      insight: "Smooth short-term noise; alert only on sustained shifts",
+    },
+    {
+      company: "Pinterest Ads",
+      implementation: "Combine PSI with volume metrics to catch missing-data drift",
+      insight: "Detect upstream ETL failures that change feature sparsity",
+    },
+    {
+      company: "Airbnb",
+      implementation: "Per-segment drift tracking (by geography, user cohort)",
+      insight: "Understand where and whom shift affects most",
+    },
+  ]}
+/>
+
+**Common thresholds:**
+- **PSI < 0.1** → Log and proceed
+- **0.1 ≤ PSI < 0.25** → Create ticket, annotate in experiment logs
+- **PSI ≥ 0.25** → Page on-call engineer, trigger retraining job
+
+## 7. Key Takeaways
+
+<Callout title="Covariate Drift Checklist">
+  - Establish **reference histograms** per feature before deployment
+  - Compute **PSI & KS** regularly (daily or weekly) between live and baseline windows
+  - Alert if **PSI ≥ 0.25** or **KS p < 0.01**
+  - Track drift **trends** — one spike can be noise; sustained growth = real issue
+  - Covariate drift is often a **precursor to concept drift** → monitor closely
+  - Use **overlay histograms** to identify _where_ the shift is (center vs tails)
 </Callout>
+
+## 8. Where This Connects
+
+This chapter showed that **inputs changed** but model performance (in theory) stayed the same. In **Chapter 3: The Vanishing Commuter**, we'll see what happens when the _relationship_ P(Y | X) itself changes — and model errors surge despite stable inputs.
+
+<Aside tone="next">
+  Next → **Chapter 3: The Vanishing Commuter** — when the underlying relationship between features and target shifts, and accuracy plummets.
+</Aside>
