@@ -3,85 +3,226 @@ title: The City That Learned Too Fast
 description: Baseline distributions & drift detection (PSI, KS test)
 ---
 
-## Introduction
-
-Welcome to DriftCity, a fictional metropolis where algorithms learn and adapt. In this chapter, we'll explore the fundamental concept of **drift detection** — understanding when and why the data feeding your models begins to behave differently.
-
-<Aside type="info">
-**What is Drift?** Drift occurs when the statistical properties of input data or relationships between inputs and outputs change over time. This can cause even well-trained models to perform poorly.
+<Aside tone="calm">
+  Every movement in DriftCity is orchestrated by algorithms. They learn, predict, and adjust—until
+  tiny statistical tremors hint that the city is changing.
 </Aside>
 
-## The Problem: Baseline Distributions
-
-Every machine learning model is trained on data from a specific time period with specific characteristics. We call this the **baseline distribution** — it's our reference point for "normal."
-
-```python
-# Example: Ride demand baseline
-import numpy as np
-
-baseline_demand = np.random.normal(loc=100, scale=15, size=1000)
-print(f"Mean demand: {baseline_demand.mean():.2f}")
-print(f"Std dev: {baseline_demand.std():.2f}")
-```
-
-<Callout heading="Key Insight">
-When production data starts to diverge from the baseline distribution, your model's assumptions become invalid. This is where **drift detection** becomes critical.
+<Callout title="What you'll learn">
+  - How to establish **baseline distributions** for an ML system's inputs and predictions.
+  - How to create a **reference window** and use it for drift detection.
+  - Which **tests and distances** to use (KS, PSI), and why.
 </Callout>
 
-### Types of Drift in MLOps
+## 1. Baseline first: define normal
 
-1. **Data Drift** (Covariate Shift): The distribution of input features changes
-2. **Label Drift**: The distribution of target labels changes
-3. **Concept Drift**: The relationship between features and labels changes
+Monitoring and observability start with a clear definition of "normal." In production ML, that means:
 
-<Aside type="warning">
-Undetected drift is one of the top causes of model degradation in production. Most teams don't realize their models have drifted until users complain!
+- a **reference window** of data (e.g., last 14 days before launch)
+- **feature profiles** (summary stats + histograms)
+- an initial **prediction score profile** (if available)
+
+This is the _known state_ we compare against later windows. Monitoring answers _that_ something changed; observability helps us ask _why_.
+
+### 1.1 Example schema (rides table)
+
+We'll use a simple ride-sharing schema throughout the guide:
+
+<DataTable
+  caption="rides_baseline schema"
+  columns={[
+    { key: "column", label: "column" },
+    { key: "type", label: "type" },
+    { key: "notes", label: "notes" },
+  ]}
+  rows={[
+    { column: "ride_id", type: "string", notes: "unique id" },
+    { column: "timestamp", type: "datetime", notes: "event time (UTC)" },
+    { column: "pickup_zone", type: "string", notes: "city grid cell id" },
+    { column: "dropoff_zone", type: "string", notes: "city grid cell id" },
+    { column: "trip_distance_km", type: "float", notes: "continuous" },
+    { column: "surge_multiplier", type: "float", notes: "continuous (>=1)" },
+    { column: "fare_amount", type: "float", notes: "continuous" },
+    { column: "driver_eta_min", type: "float", notes: "model output (optional in Ch1)" },
+  ]}
+/>
+
+<Aside>
+  In later chapters, we'll add labels/actuals and more outputs. For Chapter 1, the focus is
+  **P(X)**: input distributions.
 </Aside>
 
-## Detecting Drift: Statistical Tests
+## 2. Visualizing the baseline
 
-### Population Stability Index (PSI)
+Below are baseline histograms and descriptive stats. These serve as your reference profiles for **P(X)** features—trip distance, surge multiplier, and fare.
 
-PSI measures how much a variable has shifted between two distributions. It's calculated as:
+<HistogramPanelWithToggle
+  id="baseline-histos"
+  dataUrl="/chapters/chapter-1/fixtures/rides_baseline.csv"
+  height={360}
+  features={[
+    { label: "trip_distance_km", value: "trip_distance_km" },
+    { label: "surge_multiplier", value: "surge_multiplier" },
+    { label: "fare_amount", value: "fare_amount" },
+  ]}
+  defaultFeature="trip_distance_km"
+/>
 
-```
-PSI = Σ (% current - % baseline) × ln(% current / % baseline)
-```
+**Why histograms?**
+Two-sample tests (e.g., KS for continuous features; Chi-squared for categorical) tell you if today's window likely came from the same distribution as the baseline window. But pictures (plus summary stats) help engineers reason quickly about _where_ the change is (center, spread, tails).
 
-**Interpretation:**
-- PSI < 0.1: No significant drift
-- PSI 0.1-0.25: Small drift, monitor
-- PSI > 0.25: Significant drift, investigate
+## 3. Today vs. Baseline: measuring shift
 
-### Kolmogorov-Smirnov Test
+When labels lag, compare inputs **P(X)** and model outputs **P(ŷ)** over time. That's standard in industry monitoring stacks.
 
-The KS test compares two distributions and returns:
-- **KS Statistic**: Maximum distance between cumulative distributions (0 to 1)
-- **p-value**: Probability that distributions are the same
+We'll use:
 
-<Figure caption="Visual comparison of baseline vs drifted distributions">
-  <div style={{
-    padding: '40px',
-    textAlign: 'center',
-    backgroundColor: 'var(--color-bg-secondary)',
-    borderRadius: 'var(--radius-md)',
-    marginBottom: 'var(--space-4)'
-  }}>
-    📊 Interactive visualization would render here
-  </div>
+- **KS test** (continuous): simple, non-parametric, compares empirical CDFs
+- **PSI** (binned, symmetric): widely used for production drift dashboards; easy thresholds for alerting
+
+<DriftGauge
+  id="psi-gauge"
+  referenceUrl="/chapters/chapter-1/fixtures/rides_baseline.csv"
+  currentUrl="/chapters/chapter-1/fixtures/rides_today.csv"
+  feature="trip_distance_km"
+  thresholds={{ warn: 0.1, alert: 0.25 }}
+/>
+
+<Figure caption="PSI thresholds (rule-of-thumb)">
+- **< 0.10**: stable
+- **0.10–0.25**: moderate shift (watch)
+- **≥ 0.25**: major shift (investigate, retrain or fix)
 </Figure>
 
-<Aside type="tip">
-**Pro Tip:** PSI is better for categorical variables and smaller samples, while KS test works well for continuous distributions. Many teams use both!
+<Aside tone="info">
+  Use KS for statistical testing and PSI for **operational dashboards** with human-friendly
+  thresholds. This combo is common because PSI is robust for ongoing monitoring and easy to
+  interpret for on-call engineers.
 </Aside>
 
-## What's Next?
+## 4. Run it yourself (data + code)
 
-In the next chapter, we'll see what happens when external events (like weather changes) affect the distribution of features while relationships remain stable. We call this **covariate drift**.
+<CodeTabs
+  tabs={[
+    {
+      label: "Python: generate baseline & today",
+      language: "python",
+      code: `import numpy as np, pandas as pd
+rng = np.random.default_rng(7)
 
-<Callout heading="Summary">
-- Baseline distributions establish what "normal" looks like
-- Drift detection alerts us when production data diverges from training data
-- PSI and KS test are key statistical tools for detection
-- Undetected drift silently degrades model performance
-</Callout>
+N0, N1 = 20000, 8000 # baseline, today
+
+# Baseline distributions
+trip0 = np.clip(rng.normal(6.5, 2.0, N0), 0.5, None)
+surge0 = np.clip(rng.lognormal(mean=0.05, sigma=0.15, size=N0), 1.0, None)
+fare0 = np.clip(35 + trip0*3.2 + rng.normal(0, 5, N0), 5, None)
+
+df0 = pd.DataFrame({
+  "ride_id": [f"b_{i}" for i in range(N0)],
+  "timestamp": pd.date_range("2025-09-01", periods=N0, freq="min"),
+  "pickup_zone": rng.choice([f"Z{i:03d}" for i in range(40)], size=N0),
+  "dropoff_zone": rng.choice([f"Z{i:03d}" for i in range(40)], size=N0),
+  "trip_distance_km": trip0,
+  "surge_multiplier": surge0,
+  "fare_amount": fare0,
+})
+
+# Today's window with subtle shift (slightly longer trips, heavier tail)
+trip1 = np.clip(rng.normal(7.2, 2.3, N1), 0.5, None)
+surge1 = np.clip(rng.lognormal(mean=0.08, sigma=0.18, size=N1), 1.0, None)
+fare1 = np.clip(36 + trip1*3.4 + rng.normal(0, 6, N1), 5, None)
+
+df1 = pd.DataFrame({
+  "ride_id": [f"t_{i}" for i in range(N1)],
+  "timestamp": pd.date_range("2025-10-01", periods=N1, freq="min"),
+  "pickup_zone": rng.choice([f"Z{i:03d}" for i in range(40)], size=N1),
+  "dropoff_zone": rng.choice([f"Z{i:03d}" for i in range(40)], size=N1),
+  "trip_distance_km": trip1,
+  "surge_multiplier": surge1,
+  "fare_amount": fare1,
+})
+
+df0.to_csv("rides_baseline.csv", index=False)
+df1.to_csv("rides_today.csv", index=False)
+print("Wrote rides_baseline.csv and rides_today.csv")`
+    },
+    {
+      label: "Python: KS & PSI utilities",
+      language: "python",
+      code: `import numpy as np, pandas as pd
+from scipy.stats import ks_2samp
+
+def ks_test(baseline: pd.Series, current: pd.Series):
+    stat, p = ks_2samp(baseline.dropna(), current.dropna())
+    return {"ks_stat": float(stat), "p_value": float(p)}
+
+def psi(baseline: pd.Series, current: pd.Series, bins=10):
+    # Fixed bin edges from baseline quantiles (stable over time)
+    qs = np.quantile(baseline.dropna(), np.linspace(0, 1, bins + 1))
+    e = np.histogram(baseline, bins=qs)[0].astype(float)
+    a = np.histogram(current, bins=qs)[0].astype(float)
+    # Laplace smoothing to avoid zero-bin instability
+    e, a = e + 1e-6, a + 1e-6
+    e, a = e / e.sum(), a / a.sum()
+    return float(np.sum((a - e) * np.log(a / e)))`
+    },
+    {
+      label: "Node: server action to compute PSI",
+      language: "ts",
+      code: `// app/api/psi/route.ts
+import { NextResponse } from "next/server";
+import * as d3 from "d3-dsv";
+
+export async function POST(req: Request) {
+  const { referenceUrl, currentUrl, feature } = await req.json();
+  const [refCsv, curCsv] = await Promise.all([
+    fetch(new URL(referenceUrl, req.url)).then(r => r.text()),
+    fetch(new URL(currentUrl, req.url)).then(r => r.text())
+  ]);
+  const ref = d3.csvParse(refCsv).map(r => Number(r[feature]));
+  const cur = d3.csvParse(curCsv).map(r => Number(r[feature]));
+
+  // PSI with fixed quantile bins from reference
+  const bins = 10;
+  const refSorted = ref.filter(Number.isFinite).sort((a, b) => a - b);
+  const cuts = Array.from({length: bins + 1}, (_, i) =>
+    refSorted[Math.floor(i * (refSorted.length - 1) / bins)]
+  );
+  const hist = (arr: number[]) => {
+    const h = new Array(bins).fill(0);
+    for (const v of arr) {
+      if (!Number.isFinite(v)) continue;
+      let j = cuts.findIndex((c) => v < c);
+      if (j === -1) j = bins; // right edge
+      j = Math.max(1, Math.min(bins, j)) - 1;
+      h[j] += 1;
+    }
+    return h;
+  };
+  const e = hist(ref).map(x => x + 1e-6);
+  const a = hist(cur).map(x => x + 1e-6);
+  const es = e.map(x => x / e.reduce((s, y) => s + y, 0));
+  const as = a.map(x => x / a.reduce((s, y) => s + y, 0));
+  const psi = as.reduce((s, ap, i) => s + (ap - es[i]) * Math.log(ap / es[i]), 0);
+  return NextResponse.json({ psi });
+}`
+    }
+  ]}
+/>
+
+<Aside tone="note">
+  - KS is useful when you need a formal two-sample statistical test.
+  - PSI is robust and interpretable for **continuous monitoring** dashboards with thresholds.
+</Aside>
+
+## 5. What to alert on in Chapter 1
+
+- **PSI ≥ 0.25** on any high-importance feature → **Alert**
+- **0.10 ≤ PSI < 0.25** → **Warn**, annotate and watch next window
+- **KS p-value < 0.01** for major features → annotate **Drift suspected**
+
+Why this mix? Labels can be delayed; monitoring **P(X)** and **P(ŷ)** is crucial in those situations. Summary stats + tests help quickly narrow the _where_ and _how_ of change.
+
+## 6. Where this connects (foreshadow)
+
+This chapter ends with a subtle alert (PSI rising) that will carry into **Chapter 2: Covariate Shift**. We'll add spatial hexbins and a control-room view of evolving frequencies across zones, then step into concept drift later. Observability widens from "that it changed" to "why it changed".

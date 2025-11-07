@@ -59,11 +59,34 @@ export async function compileMDX(source: string): Promise<React.ReactElement> {
 /**
  * Load and compile MDX file in one step
  * @param filePath - Relative path from project root
+ * @param options - Optional component overrides and scope bindings for MDX
  * @returns Object containing compiled content and frontmatter
  */
-export async function loadAndCompileMDX(filePath: string): Promise<CompiledMDX> {
+interface LoadAndCompileOptions {
+  components?: Record<string, unknown>;
+  scope?: Record<string, unknown>;
+}
+
+export async function loadAndCompileMDX(
+  filePath: string,
+  options: LoadAndCompileOptions = {}
+): Promise<CompiledMDX> {
   const { source, frontmatter } = await loadMDXFile(filePath);
-  const content = await compileMDX(source);
+
+  const components = options.components
+    ? { ...mdxComponents, ...options.components }
+    : mdxComponents;
+
+  const compileArgs: Parameters<typeof compileMDXSource>[0] = {
+    source,
+    components,
+  };
+
+  if (options.scope) {
+    compileArgs.options = { scope: options.scope };
+  }
+
+  const { content } = await compileMDXSource(compileArgs);
 
   return {
     content,

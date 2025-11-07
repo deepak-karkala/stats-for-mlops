@@ -2,20 +2,23 @@ import { ReactNode } from "react";
 
 interface AsideProps {
   children: ReactNode;
-  type?: "info" | "warning" | "tip" | "note";
+  type?: "info" | "warning" | "tip" | "note" | "calm";
+  tone?: "info" | "warning" | "tip" | "note" | "calm";
 }
 
-export const Aside = ({ children, type = "info" }: AsideProps) => {
+export const Aside = ({ children, type, tone }: AsideProps) => {
+  const asideType = tone || type || "info";
   const icons = {
     info: "💡",
     warning: "⚠️",
     tip: "✨",
     note: "📝",
+    calm: "🌆",
   };
 
   return (
-    <aside className={`aside aside-${type}`}>
-      <span className="aside-icon">{icons[type]}</span>
+    <aside className={`aside aside-${asideType}`}>
+      <span className="aside-icon">{icons[asideType]}</span>
       <div className="aside-content">{children}</div>
 
       <style>{`
@@ -49,6 +52,11 @@ export const Aside = ({ children, type = "info" }: AsideProps) => {
           background-color: var(--color-bg-secondary);
         }
 
+        .aside-calm {
+          border-color: var(--color-blue);
+          background-color: rgba(0, 216, 255, 0.03);
+        }
+
         .aside-icon {
           font-size: var(--text-xl);
           flex-shrink: 0;
@@ -80,12 +88,14 @@ export const Aside = ({ children, type = "info" }: AsideProps) => {
 interface CalloutProps {
   children: ReactNode;
   heading?: string;
+  title?: string;
 }
 
-export const Callout = ({ children, heading }: CalloutProps) => {
+export const Callout = ({ children, heading, title }: CalloutProps) => {
+  const calloutTitle = title || heading;
   return (
     <div className="callout">
-      {heading && <h4 className="callout-heading">{heading}</h4>}
+      {calloutTitle && <h4 className="callout-heading">{calloutTitle}</h4>}
       <div className="callout-body">{children}</div>
 
       <style>{`
@@ -230,9 +240,25 @@ export const CodeBlock = ({ children, language = "text", title }: CodeBlockProps
   );
 };
 
+// Import UI components
+import CodeTabs from "../ui/CodeTabs";
+import DataTable from "../ui/DataTable";
+import ToggleGroup from "../ui/ToggleGroup";
+
+// Import plot components
+import HistogramPanel from "../plots/HistogramPanel";
+import HistogramPanelWithToggle from "../plots/HistogramPanelWithToggle";
+import DriftGauge from "../plots/DriftGauge";
+
 export const mdxComponents = {
   Aside,
   Callout,
   Figure,
   CodeBlock,
+  CodeTabs,
+  DataTable,
+  ToggleGroup,
+  HistogramPanel,
+  HistogramPanelWithToggle,
+  DriftGauge,
 };

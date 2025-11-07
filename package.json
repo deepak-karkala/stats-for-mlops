@@ -7,20 +7,23 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "generate:ch1": "python3 scripts/generate_chapter1_data.py"
   },
   "dependencies": {
+    "@babel/runtime": "^7.26.5",
     "d3-dsv": "^3.0.1",
     "gray-matter": "^4.0.3",
     "next": "^14.2.0",
     "next-mdx-remote": "^5.0.0",
     "plotly.js": "^2.26.0",
+    "plotly.js-dist-min": "^3.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "react-plotly.js": "^2.6.0",
-    "@babel/runtime": "^7.26.5"
+    "react-plotly.js": "^2.6.0"
   },
   "devDependencies": {
+    "@types/d3-dsv": "^3.0.7",
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
