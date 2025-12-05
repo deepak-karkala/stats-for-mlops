@@ -250,6 +250,9 @@ import HistogramPanel from "../plots/HistogramPanel";
 import HistogramPanelWithToggle from "../plots/HistogramPanelWithToggle";
 import HistogramCompare from "../plots/HistogramCompare";
 import DriftGauge from "../plots/DriftGauge";
+import ScatterCompare from "../plots/ScatterCompare";
+import RMSETrend from "../plots/RMSETrend";
+import ResidualHeatmap from "../plots/ResidualHeatmap";
 
 export const mdxComponents = {
   Aside,
@@ -263,4 +266,7 @@ export const mdxComponents = {
   HistogramPanelWithToggle,
   HistogramCompare,
   DriftGauge,
+  ScatterCompare,
+  RMSETrend,
+  ResidualHeatmap,
 };

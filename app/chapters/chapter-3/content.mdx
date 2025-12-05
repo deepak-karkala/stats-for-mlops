@@ -1,113 +1,179 @@
 ---
-title: The Algorithm's Identity Crisis
+title: The Vanishing Commuter
 description: Concept drift detection & model performance degradation
 ---
 
-## Introduction
-
-Years passed in DriftCity, and the city transformed. New transportation competitors emerged, user preferences shifted, and the fundamental relationship between features (like distance and time of day) and ride demand changed. This is **concept drift** — when the underlying decision boundary itself moves, making even perfectly stable feature distributions inadequate.
-
-<Aside type="info">
-**Concept Drift** occurs when the relationship between input features and target labels changes over time. Even if feature distributions remain identical, the model's learned patterns become obsolete.
+<Aside tone="story">
+  The rain stopped, but DriftCity didn't go back to normal. The streets were dry—but the commuters were gone. Same inputs, different outcomes.
 </Aside>
 
-## The Problem: Changing User Behavior
-
-Your ride-share model learned that Friday nights have highest demand. But as competitors saturated the market and user preferences shifted, that relationship weakened. The statistical distribution of trips remained similar, but *why* users request rides changed fundamentally.
-
-```python
-# Example: Same feature distribution, different relationship
-import numpy as np
-
-# Both periods have similar distance distributions
-distance_2022 = np.random.lognormal(mean=1.5, sigma=0.8, size=1000)
-distance_2024 = np.random.lognormal(mean=1.5, sigma=0.8, size=1000)
-
-# But the demand relationship changed
-demand_2022 = 50 + 30 * distance_2022 + np.random.normal(0, 10, 1000)
-demand_2024 = 30 + 20 * distance_2024 + np.random.normal(0, 15, 1000)
-
-print(f"Coefficient (2022): 30 → (2024): 20")
-```
-
-<Callout heading="Key Insight">
-Concept drift is the most insidious type of drift because traditional accuracy metrics may not immediately reveal it. Performance degrades gradually as the learned relationships become stale.
+<Callout title="What you'll learn">
+  - What **concept drift** means (when P(Y | X) changes)
+  - How to detect it using **performance degradation** and **residual analysis**
+  - How to visualize drift with scatter plots and error trends
 </Callout>
 
-### Detecting Concept Drift Through Model Performance
+## 1. From Covariate to Concept Drift
 
-Track these signals to detect concept drift:
+Covariate drift changed the inputs. Concept drift changes the **relationship** between inputs and outputs — the model's mapping itself.
 
-1. **RMSE/MAE Trends**: Rising prediction errors on validation windows
-2. **Residual Patterns**: Systematic errors in specific segments
-3. **Feature Importance Shifts**: Which features matter changes over time
-4. **Prediction Bias**: Consistent over/under predictions
+In DriftCity, remote work patterns altered travel times. Our ETA model, once perfect on rush-hour traffic, now consistently **under-predicts** duration.
 
-<Aside type="warning">
-Never rely solely on overall metrics! Concept drift often manifests as systematic errors in specific segments or time periods before affecting aggregate performance.
-</Aside>
+**What changed:**
+- Covariate drift: Input distribution P(X) shifted → Chapter 2
+- **Concept drift: Relationship P(Y | X) shifted → This chapter**
 
-## Statistical Detection: Residual Analysis
+The model's learned rule: ETA ≈ 5 + 0.9×distance. But now: ETA ≈ 6 + 1.2×distance (heavier traffic).
 
-Examine prediction residuals for patterns:
+## 2. Detecting Concept Drift with Performance Metrics
 
-```python
-# Calculate rolling RMSE to detect concept drift
-residuals = actual - predicted
-rolling_rmse = residuals.rolling(window=28).std()  # Weekly windows
+The simplest signal: the model's **error trends** start rising even when inputs look similar. We track metrics like:
 
-# High/increasing residuals indicate model degradation
-print(f"RMSE trend: {rolling_rmse.mean():.3f}")
-```
+- **RMSE**: Root Mean Squared Error — sensitive to large outliers
+- **MAE**: Mean Absolute Error — average prediction miss size
+- **Bias**: Mean(pred – actual) — directional drift
 
-**Key indicators of concept drift:**
-- Residuals no longer centered at zero (systematic bias)
-- Variance of residuals increasing over time
-- Residuals clustered in specific segments (time, geography, etc.)
+<RMSETrend
+  id="rmse-trend-ch3"
+  dataUrl="/chapters/chapter-3/fixtures/eta_model_performance.csv"
+  height={280}
+/>
 
-<Figure caption="Residual heatmap reveals systematic prediction errors indicating concept drift">
-  <div style={{
-    padding: '40px',
-    textAlign: 'center',
-    backgroundColor: 'var(--color-bg-secondary)',
-    borderRadius: 'var(--radius-md)',
-    marginBottom: 'var(--space-4)'
-  }}>
-    🔥 Residual heatmap visualization would render here
-  </div>
-</Figure>
+Notice RMSE climbing over time — the model is failing silently.
 
-## Quantifying Model Degradation
+## 3. Predicted vs Actual: Scatter Comparison
 
-Track aggregate performance metrics in rolling windows:
+Compare baseline (blue) vs drifted (amber) predictions. The y = x line represents perfect predictions.
 
-```python
-# Rolling window performance evaluation
-for window in split_data_into_windows(data):
-    window_rmse = calculate_rmse(predictions[window], actuals[window])
-    window_mae = calculate_mae(predictions[window], actuals[window])
-    print(f"RMSE: {window_rmse:.3f}, MAE: {window_mae:.3f}")
-```
+<ScatterCompare
+  id="scatter-compare-ch3"
+  referenceUrl="/chapters/chapter-3/fixtures/rides_baseline.csv"
+  currentUrl="/chapters/chapter-3/fixtures/rides_concept_drift.csv"
+  xField="pred_eta_min"
+  yField="actual_eta_min"
+  height={360}
+/>
 
-<Aside type="tip">
-**Pro Tip:** Use 7-28 day rolling windows depending on your data frequency. Larger windows smooth noise, smaller windows catch rapid changes.
-</Aside>
+**Interpretation:**
+- In baseline data, points hug the y = x line (pred ≈ actual)
+- After drift, points flatten (slope < 1): model is **under-predicting** ETAs
+- The model learned a relationship that no longer holds
 
-## When to Retrain
+## 4. Residual Analysis (Spatial & Temporal)
 
-Concept drift triggers model retraining when:
-- RMSE increases by >15% over baseline
-- Residuals show systematic patterns
-- Residual variance increases significantly
-- Performance degrades in critical segments
+Residual = (actual – predicted). Patterns in residuals show where the model systematically fails.
 
-## Next Steps
+<ResidualHeatmap
+  id="residual-heatmap-ch3"
+  dataUrl="/chapters/chapter-3/fixtures/residual_heatmap.csv"
+  zoneField="city_zone"
+  hourField="hour_of_day"
+  residualField="residual_min"
+  height={400}
+/>
 
-Chapter 4 shifts focus to controlled experimentation and detecting when *intentional* changes (A/B tests) cause drift.
+Orange zones = high positive residuals (under-predictions). Downtown is glowing — traffic patterns changed since baseline.
 
-<Callout heading="Summary">
-- Concept drift changes the relationship between features and labels
-- Track residuals and performance trends to detect it
-- Systematic prediction bias and increasing variance are key signals
-- Performance monitoring across segments reveals drift before aggregate metrics
+## 5. Run It Yourself
+
+<CodeTabs
+  tabs={[
+    {
+      label: "Python: generate concept-drift data",
+      language: "python",
+      code: `import numpy as np, pandas as pd
+rng = np.random.default_rng(11)
+base = pd.read_csv("rides_baseline.csv")
+
+# Add model predictions (baseline model)
+base["pred_eta_min"] = 5 + 0.9*base["trip_distance_km"] + rng.normal(0,1, len(base))
+base["actual_eta_min"] = 5 + 0.9*base["trip_distance_km"] + rng.normal(0,1, len(base))
+
+# Concept drift: new commuting behavior -> slower traffic
+curr = base.sample(frac=0.5, random_state=42).copy()
+curr["actual_eta_min"] = 6 + 1.2*curr["trip_distance_km"] + rng.normal(0,1.5,len(curr))
+
+# Model predictions remain from baseline (not retrained)
+curr.to_csv("rides_concept_drift.csv", index=False)
+print("Wrote rides_concept_drift.csv")`
+    },
+    {
+      label: "Python: rolling RMSE",
+      language: "python",
+      code: `import pandas as pd, numpy as np
+from sklearn.metrics import mean_squared_error
+from math import sqrt
+
+df = pd.read_csv("rides_concept_drift.csv")
+df["date"] = pd.date_range("2025-09-01", periods=len(df), freq="min")
+df["day"] = df["date"].dt.date
+
+rmse = (df.groupby("day")
+.apply(lambda x: sqrt(mean_squared_error(x["actual_eta_min"], x["pred_eta_min"])))
+.reset_index(name="rmse"))
+rmse["mae"] = df.groupby("day").apply(
+lambda x: np.mean(np.abs(x["actual_eta_min"] - x["pred_eta_min"]))
+).values
+rmse.to_csv("eta_model_performance.csv", index=False)
+print("Wrote eta_model_performance.csv")`
+    },
+    {
+      label: "Python: residual matrix",
+      language: "python",
+      code: `import pandas as pd, numpy as np
+df = pd.read_csv("rides_concept_drift.csv")
+df["hour_of_day"] = np.random.randint(0,24,len(df))
+df["city_zone"] = np.random.choice([f"Z{i:03d}" for i in range(10)], len(df))
+df["residual_min"] = df["actual_eta_min"] - df["pred_eta_min"]
+heat = df.groupby(["city_zone","hour_of_day"])["residual_min"].mean().reset_index()
+heat.to_csv("residual_heatmap.csv", index=False)
+print("Wrote residual_heatmap.csv")`
+    }
+  ]}
+/>
+
+## 6. Real-World Practice: Concept Drift Monitoring
+
+<DataTable
+  caption="Industry approaches to concept drift detection"
+  columns={[
+    { key: "company", label: "Company" },
+    { key: "method", label: "Method" },
+    { key: "insight", label: "Key Insight" },
+  ]}
+  rows={[
+    {
+      company: "Lyft ETA Service",
+      method: "Tracks model error distributions daily using MAE/percentile bands",
+      insight: "Detect concept drift before SLA breach",
+    },
+    {
+      company: "Uber Michelangelo",
+      method: "Auto-computes residual features and flags zones where error > 2σ for > 3 days",
+      insight: "Combines drift metrics with spatial telemetry to prioritize retraining",
+    },
+    {
+      company: "Airbnb Pricing",
+      method: "Monitors prediction bias separately for high-demand markets",
+      insight: "Bias = mean(pred – actual); systematic sign change → concept shift",
+    },
+  ]}
+/>
+
+## 7. Key Takeaways
+
+<Callout title="Concept Drift Checklist">
+  - Track **model error metrics** (RMSE, MAE, Bias) over time
+  - Visualize **pred vs actual scatter** — slope and spread tell the story
+  - Use **residual heatmaps** to localize drift (spatial or temporal)
+  - Retrain when pattern changes persist > a few windows
+  - Concept drift = relationship change → relearn the world
 </Callout>
+
+## 8. Where This Connects
+
+This chapter showed that **relationships changed** even when inputs stayed similar. In **Chapter 4: The Duel of Engines**, we'll learn how to use A/B testing to safely roll out new models and detect which performs better in a drifting world.
+
+<Aside tone="next">
+  Next → **Chapter 4: The Duel of Engines** — A/B testing two models to decide which handles the new world better.
+</Aside>
