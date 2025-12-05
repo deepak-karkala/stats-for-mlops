@@ -256,6 +256,8 @@ import ResidualHeatmap from "../plots/ResidualHeatmap";
 import ABDistribution from "../plots/ABDistribution";
 import SRMGauge from "../plots/SRMGauge";
 import PowerCurve from "../plots/PowerCurve";
+import { CUPEDDemo } from "../plots/CUPEDDemo";
+import { SequentialChart } from "../plots/SequentialChart";
 
 export const mdxComponents = {
   Aside,
@@ -275,4 +277,6 @@ export const mdxComponents = {
   ABDistribution,
   SRMGauge,
   PowerCurve,
+  CUPEDDemo,
+  SequentialChart,
 };
