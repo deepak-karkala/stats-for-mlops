@@ -1,0 +1,4 @@
+group,observed_count,expected_count,ratio
+control,5000.0,5000.0,0.5
+treatment,5000.0,5000.0,0.5
+chi2_result,0.0,3.841,1.0

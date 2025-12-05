@@ -253,6 +253,9 @@ import DriftGauge from "../plots/DriftGauge";
 import ScatterCompare from "../plots/ScatterCompare";
 import RMSETrend from "../plots/RMSETrend";
 import ResidualHeatmap from "../plots/ResidualHeatmap";
+import ABDistribution from "../plots/ABDistribution";
+import SRMGauge from "../plots/SRMGauge";
+import PowerCurve from "../plots/PowerCurve";
 
 export const mdxComponents = {
   Aside,
@@ -269,4 +272,7 @@ export const mdxComponents = {
   ScatterCompare,
   RMSETrend,
   ResidualHeatmap,
+  ABDistribution,
+  SRMGauge,
+  PowerCurve,
 };

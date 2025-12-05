@@ -3,132 +3,188 @@ title: The Great Experiment
 description: A/B testing, sample ratio mismatch, and statistical power
 ---
 
-## Introduction
-
-DriftCity's leadership decided: "Let's test a new pricing algorithm on 10% of users." This marks the beginning of controlled experimentation in production systems. Unlike drift, which is unintended, **A/B testing** introduces intentional changes while carefully monitoring outcomes. But with power comes responsibility — poor experiment design can masquerade results as statistically significant when they're merely noise.
-
-<Aside type="info">
-**A/B Testing** compares two variants (A: control, B: treatment) to measure causal impact of a change. Statistical rigor ensures we don't chase false positives or ignore true effects.
+<Aside tone="story">
+DriftCity's leadership decided: "Let's test a new pricing algorithm on 10% of users." This marks the beginning of controlled experimentation in production systems. Unlike drift, which is unintended, A/B testing introduces intentional changes while carefully monitoring outcomes.
 </Aside>
 
-## The Problem: Reliability of Results
-
-Your new pricing algorithm shows a 5% improvement in revenue per ride. But is it real? Could randomness alone explain this difference? This is where **statistical power** and **sample size** become critical.
-
-```python
-# Example: Testing revenue impact
-control_revenue = [12.50, 13.20, 11.80, ...]  # 1000 samples
-treatment_revenue = [13.10, 13.80, 12.40, ...]  # 100 samples (smaller)
-
-control_mean = np.mean(control_revenue)  # $12.50
-treatment_mean = np.mean(treatment_revenue)  # $13.10
-
-# But unequal sample sizes complicate statistical testing
-```
-
-<Callout heading="Key Insight">
-Even if a 5% improvement is real, insufficient sample sizes or imbalanced allocations can lead to false conclusions. Rigorous experimental design prevents costly mistakes.
+<Callout title="What you'll learn">
+  - How A/B testing measures causal impact of changes
+  - What **Sample Ratio Mismatch (SRM)** is and why it signals bugs
+  - How **statistical power** determines if your sample size is sufficient
+  - The critical role of pre-experiment planning
 </Callout>
 
-### Sample Ratio Mismatch (SRM)
+## A/B Testing Fundamentals
 
-A critical issue in online experiments: **Sample Ratio Mismatch** occurs when your actual treatment/control split doesn't match your intended allocation.
+Your new pricing algorithm shows a 5-percent improvement in revenue per ride. But is it real? Could randomness alone explain this difference?
 
-```
-Intended: 50% control, 50% treatment
-Actual: 45% control, 55% treatment
-```
+**A/B Testing** compares two variants:
+- **Control (A)**: Current algorithm, status quo
+- **Treatment (B)**: New algorithm, the change being tested
 
-**Causes:**
+Statistical rigor ensures we don't chase false positives or ignore true effects.
+
+## Revenue Distribution: Control vs Treatment
+
+Below is the distribution of revenue per ride for control and treatment groups after running the A/B test on 10,000 rides total.
+
+<ABDistribution
+  id="ab-distribution-ch4"
+  dataUrl="/chapters/chapter-4/fixtures/ab_test_results.csv"
+  height={360}
+/>
+
+**Observations:**
+- Control mean: ~$12.52 (blue)
+- Treatment mean: ~$13.07 (amber)
+- Observed lift: ~4.4%
+- The distributions overlap, but treatment is visibly shifted right
+
+The question: Is this 4.4% lift statistically significant, or just noise?
+
+## Sample Ratio Mismatch (SRM) Check
+
+Before interpreting results, always verify your randomization worked correctly. **Sample Ratio Mismatch** occurs when your actual treatment/control split doesn't match your intended allocation (e.g., intended 50-50, actual 45-55).
+
+<SRMGauge
+  id="srm-gauge-ch4"
+  dataUrl="/chapters/chapter-4/fixtures/srm_check.csv"
+  height={320}
+/>
+
+**Why SRM matters:**
+- Often indicates a bug in experiment infrastructure (not the algorithm)
+- Can invalidate statistical tests
+- Check SRM BEFORE interpreting results
+
+**SRM causes:**
 - User segmentation bugs
 - Regional traffic imbalances
 - Bot traffic patterns
 - Browser caching issues
 
-<Aside type="warning">
-SRM often indicates a bug in your experiment infrastructure, not your algorithm. Always check SRM before interpreting results!
-</Aside>
-
-## Statistical Power and Effect Size
+## Statistical Power & Sample Size
 
 **Power** measures the probability of detecting a true effect:
 
 - **High Power (80-90%)**: Likely to detect real differences
-- **Low Power (<50%)**: May miss real improvements
-- **Type I Error (α)**: False positive rate (typically 5%)
+- **Low Power (&lt;50%)**: May miss real improvements
+- **Type I Error (α)**: False positive rate (typically 5 percent)
 - **Type II Error (β)**: False negative rate (typically 10-20%)
 
-```python
-# Example: Power calculation for detecting 5% revenue lift
-from scipy.stats import norm
+To detect a 5-percent revenue lift with 80 percent power, how many samples do we need per group?
 
-# Given baseline mean and standard deviation
-baseline_mean = 12.50
-baseline_std = 3.20
-effect_size = 0.05 * baseline_mean  # 5% lift = $0.625
+<PowerCurve
+  id="power-curve-ch4"
+  dataUrl="/chapters/chapter-4/fixtures/power_curve.csv"
+  height={360}
+/>
 
-# Required sample size for 80% power
-required_n = estimate_sample_size(
-    effect_size=effect_size,
-    std_dev=baseline_std,
-    alpha=0.05,  # 5% significance level
-    power=0.80   # 80% power
-)
-print(f"Sample size needed per group: {required_n}")
-```
+**Interpretation:**
+- At ~464 samples per group, we reach 80% power
+- We used 5,000 samples per group, so we're well above this threshold
+- This experiment has very high power to detect the effect size
 
-<Figure caption="Power curve shows relationship between sample size and ability to detect effects">
-  <div style={{
-    padding: '40px',
-    textAlign: 'center',
-    backgroundColor: 'var(--color-bg-secondary)',
-    borderRadius: 'var(--radius-md)',
-    marginBottom: 'var(--space-4)'
-  }}>
-    📊 Power curve visualization would render here
-  </div>
-</Figure>
+## Pre-Experiment Checklist
 
-## Testing Methodology
+Before launching any A/B test, ensure:
 
-### Pre-experiment Checklist
-
-1. **Define hypothesis** clearly and precisely
+1. **Define hypothesis** clearly: "New pricing increases revenue per ride by ≥ 5 percent"
 2. **Calculate required sample size** for desired power
-3. **Check for SRM** between control and treatment
-4. **Specify primary and secondary metrics**
+3. **Check randomization** (SRM check)
+4. **Specify primary and secondary metrics** upfront
 5. **Set significance level (α)** and power target
-
-### Statistical Tests
-
-```python
-# T-test for continuous metrics (revenue, time spent)
-from scipy.stats import ttest_ind
-t_stat, p_value = ttest_ind(control_revenue, treatment_revenue)
-
-# Chi-square test for categorical metrics (conversion rate)
-from scipy.stats import chi2_contingency
-chi2, p_value, dof, expected = chi2_contingency(contingency_table)
-```
-
-<Aside type="tip">
-**Pro Tip:** Always run pre-experiment power calculations. Running an experiment with 30% power is worse than not running it — you're likely to make Type II errors (missing real effects).
-</Aside>
+6. **Determine duration**: Until reaching sample size, not based on p-values
 
 ## Common Pitfalls
 
-1. **Peeking at results early**: Increases false positive rates
-2. **Multiple comparisons**: Without correction, each additional metric increases false positive probability
-3. **Unequal variance**: Choose appropriate statistical tests
-4. **Selection bias**: Exclude users mid-experiment invalidates results
+**❌ Peeking at results early**: Increases false positive rates. Decide on sample size upfront.
 
-## Next Steps
+**❌ Multiple comparisons**: Each additional metric tested inflates false positive probability. Use corrections like Bonferroni.
 
-Chapter 5 introduces advanced techniques like **CUPED** to reduce variance and detect smaller effects with fewer samples.
+**❌ Unequal variance**: Choose appropriate statistical tests (Welch's t-test if variances differ).
 
-<Callout heading="Summary">
-- A/B testing requires careful statistical planning before execution
-- Sample Ratio Mismatch signals bugs in experiment infrastructure
-- Power analysis determines if sample size is sufficient for desired effect
-- Pre-experiment rigor prevents costly false conclusions
+**❌ Selection bias**: Excluding users mid-experiment invalidates randomization.
+
+**❌ Correlation between treatments**: Users seeing multiple experiments simultaneously.
+
+## Statistical Tests
+
+### Continuous Metrics (Revenue, Time)
+
+```python
+from scipy.stats import ttest_ind
+
+# T-test compares means
+t_stat, p_value = ttest_ind(control_revenue, treatment_revenue)
+
+# If p_value < 0.05, reject null hypothesis (difference is significant)
+if p_value < 0.05:
+    print(f"Lift is statistically significant (p={p_value:.4f})")
+```
+
+### Categorical Metrics (Conversion Rate)
+
+```python
+from scipy.stats import chi2_contingency
+
+# Chi-square test for proportions
+contingency_table = [
+    [control_conversions, control_non_conversions],
+    [treatment_conversions, treatment_non_conversions]
+]
+chi2, p_value, dof, expected = chi2_contingency(contingency_table)
+```
+
+## Real-World Practice: Experiment Best Practices
+
+<DataTable
+  caption="How major tech companies structure A/B testing"
+  columns={[
+    { key: "company", label: "Company" },
+    { key: "practice", label: "Best Practice" },
+    { key: "insight", label: "Key Insight" },
+  ]}
+  rows={[
+    {
+      company: "Netflix",
+      practice: "Pre-register experiments in XPGUARD before launching",
+      insight: "Prevents p-hacking and researcher bias",
+    },
+    {
+      company: "Uber",
+      practice: "Minimum sample size threshold; never peek at results",
+      insight: "Fixed sample size prevents false positives from peeking",
+    },
+    {
+      company: "Airbnb",
+      practice: "Analyze by segment (geography, user cohort, device)",
+      insight: "Identify which groups benefit most from change",
+    },
+    {
+      company: "DoorDash",
+      practice: "Run experiments for full week cycles (Mon-Sun) to capture day-of-week effects",
+      insight: "Temporal patterns matter; control for them",
+    },
+  ]}
+/>
+
+## Key Takeaways
+
+<Callout title="A/B Testing Checklist">
+  - Define hypothesis upfront (before seeing data)
+  - Calculate required sample size for 80% power
+  - Check SRM before trusting results
+  - Never peek at results during experiment
+  - Use pre-registered primary metrics only
+  - Understand effect size vs statistical significance
+  - Replicate results on holdout data before shipping
 </Callout>
+
+## Where This Connects
+
+This chapter showed how to rigorously test changes in production. In **Chapter 5: The Variance Reduction**, we'll learn advanced techniques like **CUPED** to reduce variance and detect smaller effects with fewer samples — making experiments faster and more efficient.
+
+<Aside tone="next">
+  Next → **Chapter 5: The Variance Reduction** — Using CUPED to improve experimental precision and detect smaller effects.
+</Aside>
