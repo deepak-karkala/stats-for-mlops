@@ -1,139 +1,182 @@
 ---
-title: Sharpening the Lens
-description: Variance reduction via CUPED and sequential testing
+title: The CUPED Control Tower
+description: Variance reduction and sequential testing for faster experimentation
 ---
 
-## Introduction
-
-DriftCity's experiments team discovered something frustrating: real improvements of 2-3% in revenue were being drowned out by natural variation. Standard A/B tests required running 50,000 samples per variant to detect such subtle effects. Then they learned about **CUPED** (Controlled Experiment Using Pre-Experiment Data) — a technique that uses historical data to dramatically reduce variance and detect smaller effects with fewer samples.
-
-<Aside type="info">
-**CUPED** is a variance reduction technique that leverages pre-experiment metrics to adjust treatment and control outcomes, reducing noise and increasing statistical power without sacrificing data integrity.
+<Aside tone="story">
+After countless experiments, DriftCity's engineers built a control tower above the clouds — a system to measure experiments faster and more precisely without waiting weeks for data. CUPED and sequential testing became their secret weapons for accelerating learning.
 </Aside>
 
-## The Problem: Noisy Metrics
-
-Your ride-share revenue varies significantly day-to-day due to weather, events, and randomness. A true 2% improvement gets lost in this noise. Standard approach: run 100,000 samples. CUPED approach: run 10,000 samples with higher power.
-
-```python
-# Example: High variance metric
-daily_revenue = [1245, 1189, 1567, 1402, 1198, ...]  # Std Dev: ~$200
-
-# True effect: +$25 per user (2% improvement)
-# Without variance reduction: Need 50k samples to detect
-# With CUPED: Need only 5k samples to detect
-```
-
-<Callout heading="Key Insight">
-Variance reduction isn't just faster; it's cheaper, reaches conclusions sooner, and lets you run more experiments in parallel.
+<Callout title="What you'll learn">
+  - How CUPED reduces variance in A/B tests using pre-experiment data
+  - How sequential testing lets you peek early without inflating false-positive risk
+  - How to implement both techniques with simple code and visual checks
+  - When to combine these methods for maximum efficiency
 </Callout>
 
-### The CUPED Technique
+## Why Variance Reduction Matters
 
-CUPED adjusts experiment outcomes using pre-experiment (baseline) metrics:
+High metric noise leads to slow experiments. A subtle 2% improvement in revenue can be drowned out by day-to-day randomness. The solution? **CUPED** (Controlled-experiment Using Pre-Experiment Data) uses correlated pre-period metrics to reduce post-period variance.
 
-**Step 1:** Collect baseline metrics (e.g., revenue per user in week before experiment)
+If baseline and experiment periods are correlated, we can subtract the predictable component:
 
-**Step 2:** Calculate adjustment coefficient θ:
+**CUPED formula:**
 ```
-θ = cov(baseline, treatment_outcome) / var(baseline)
-```
-
-**Step 3:** Adjust observed outcomes:
-```
-adjusted_outcome = observed_outcome - θ × (baseline - mean_baseline)
+Y_cuped = Y - θ(X - X̄)
 ```
 
-```python
-# CUPED implementation
-import numpy as np
-from scipy import stats
+Where:
+- `Y` = observed experiment metric
+- `X` = pre-experiment baseline metric
+- `θ = Cov(X,Y) / Var(X)` = adjustment coefficient
+- `X̄` = mean of baseline
 
-# Historical baseline metrics
-baseline = [1245, 1189, 1567, 1402, ...]
+The more correlated X and Y are, the greater the variance reduction.
 
-# Experiment outcomes
-treatment_outcome = [1270, 1210, 1595, 1425, ...]
-control_outcome = [1245, 1188, 1568, 1402, ...]
+## Interactive CUPED Demo
 
-# Calculate adjustment coefficient
-theta = np.cov(baseline, treatment_outcome)[0, 1] / np.var(baseline)
+Adjust the correlation slider below to see how CUPED variance reduction works. Higher correlation between baseline and experiment metrics leads to greater variance reduction.
 
-# Adjust outcomes
-adjusted_treatment = treatment_outcome - theta * (baseline - np.mean(baseline))
-adjusted_control = control_outcome - theta * (baseline - np.mean(baseline))
+<CUPEDDemo dataUrl="/chapters/chapter-5/fixtures/cuped_demo.csv" />
 
-# Now compare with much lower variance!
-print(f"Variance reduction: {np.var(control_outcome) / np.var(adjusted_control):.1f}x")
-```
-
-<Figure caption="CUPED reduces variance by leveraging correlation between baseline and treatment metrics">
-  <div style={{
-    padding: '40px',
-    textAlign: 'center',
-    backgroundColor: 'var(--color-bg-secondary)',
-    borderRadius: 'var(--radius-md)',
-    marginBottom: 'var(--space-4)'
-  }}>
-    📉 CUPED variance reduction visualization would render here
-  </div>
-</Figure>
-
-<Aside type="warning">
-CUPED only works when baseline metrics are correlated with outcomes. Use it for metrics like daily revenue, not for new user metrics where baseline doesn't exist.
-</Aside>
+**Observations:**
+- Low correlation (ρ ≈ 0.2): minimal improvement
+- High correlation (ρ ≈ 0.8): 64% variance reduction
+- Variance reduction ≈ ρ² (correlation squared)
 
 ## Sequential Testing
 
-Rather than waiting for a fixed sample size, **sequential testing** allows you to monitor results continuously and stop early when you have sufficient evidence.
+Instead of fixing a sample size upfront, sequential testing analyzes cumulative data over time while controlling error rates. This allows early stopping when evidence is overwhelming.
 
-**Traditional approach:**
-1. Calculate required sample size (n=10,000 per group)
-2. Run experiment until reaching n
-3. Run statistical test once
-4. Declare winner or continue
+<SequentialChart dataUrl="/chapters/chapter-5/fixtures/sequential_sim.csv" />
 
-**Sequential approach:**
-1. Check results every day
-2. Stop when evidence is overwhelming
-3. Rejects null hypothesis with controlled error rates
-4. Can stop 30-40% earlier on average
+**Key points:**
+- Orange line tracks p-value as samples accumulate
+- Dashed lines represent significance thresholds (α = 0.05 and α = 0.01)
+- When p-value crosses threshold, you can stop early with controlled Type I error
+- Sequential testing typically saves 30-40% of samples compared to fixed-horizon tests
 
-```python
-# Sequential test pseudocode
-for day in experiment_days:
-    control_count = count_users(control_group, day)
-    treatment_count = count_users(treatment_group, day)
+## Implementation Code
 
-    # Check stopping rules
-    if control_count > 5000:
-        z_score = calculate_z_score(control, treatment)
+Here's how to generate CUPED demo data and implement the variance reduction:
 
-        # Stop if p-value < 0.025 (one-tailed, Bonferroni-corrected)
-        if abs(z_score) > 1.96:
-            declare_winner()
-            break
-```
+<CodeTabs
+  tabs={[
+    {
+      label: "Python: CUPED implementation",
+      language: "python",
+      code: `import numpy as np
+import pandas as pd
 
-<Aside type="tip">
-**Pro Tip:** Sequential testing combined with CUPED is powerful: reduce variance with CUPED, then use sequential tests to stop early. You get both speed and statistical rigor.
-</Aside>
+# Load experiment data
+df = pd.read_csv("cuped_demo.csv")
 
-## Sample Size Comparison
+# Calculate adjustment coefficient θ
+theta = np.cov(df["pre_metric"], df["post_metric"])[0,1] / np.var(df["pre_metric"])
 
-| Approach | Min Sample Size | Detects 2% Effect? |
-|----------|-----------------|-------------------|
-| Standard A/B Test | 50,000 per group | ✓ (80% power) |
-| CUPED | 5,000 per group | ✓ (80% power) |
-| Sequential + CUPED | 3,500 per group avg | ✓ (80% power) |
+# Apply CUPED adjustment
+df["y_cuped"] = df["post_metric"] - theta * (df["pre_metric"] - df["pre_metric"].mean())
 
-## Next Steps
+# Calculate variance reduction
+reduction = 1 - df["y_cuped"].var() / df["post_metric"].var()
+print(f"Variance reduction: {reduction:.2%}")`
+    },
+    {
+      label: "Python: Sequential test simulation",
+      language: "python",
+      code: `import numpy as np
+import pandas as pd
+from scipy.stats import ttest_ind
 
-Chapter 6 brings everything together: building dashboards and guardrails that automatically monitor all these drift and performance signals in production.
+rng = np.random.default_rng(14)
+n_steps = 20
+N_total = 10000
+effect = 0.2  # Cohen's d
 
-<Callout heading="Summary">
-- CUPED dramatically reduces variance using historical baselines
-- Variance reduction lets you detect smaller effects faster and cheaper
-- Sequential testing allows early stopping with controlled error rates
-- Combining both techniques maximizes experiment velocity and rigor
+# Generate data
+A = rng.normal(0, 1, N_total)  # Control
+B = rng.normal(effect, 1, N_total)  # Treatment
+
+# Sequential testing
+records = []
+for i in range(1, n_steps + 1):
+    n = int(i * N_total / n_steps)
+    t, p = ttest_ind(A[:n], B[:n])
+    records.append({"n": n, "p_value": p})
+
+df = pd.DataFrame(records)
+print(df)`
+    }
+  ]}
+/>
+
+## Interpreting Results
+
+<table>
+  <thead>
+    <tr>
+      <th>Technique</th>
+      <th>Goal</th>
+      <th>Interpretation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>CUPED</td>
+      <td>Reduce variance using pre-period covariate</td>
+      <td>Narrower CI → faster detection</td>
+    </tr>
+    <tr>
+      <td>Sequential</td>
+      <td>Check significance progressively</td>
+      <td>Detect early winners without bias</td>
+    </tr>
+    <tr>
+      <td>Combined</td>
+      <td>CUPED + Sequential</td>
+      <td>Maximum sensitivity at minimal data cost</td>
+    </tr>
+  </tbody>
+</table>
+
+## Real-World Applications
+
+<table>
+  <thead>
+    <tr>
+      <th>Company</th>
+      <th>Technique</th>
+      <th>Outcome</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Airbnb</strong></td>
+      <td>CUPED on booking conversion + pre-trip features</td>
+      <td>Reduced required sample size by ≈40%</td>
+    </tr>
+    <tr>
+      <td><strong>Netflix</strong></td>
+      <td>Sequential testing (O'Brien-Fleming boundaries)</td>
+      <td>Ends 10% of experiments early with controlled α</td>
+    </tr>
+    <tr>
+      <td><strong>Uber</strong></td>
+      <td>CUPED + guardrails</td>
+      <td>Keeps experimentation latency low for re-ranking models</td>
+    </tr>
+  </tbody>
+</table>
+
+## Key Takeaways
+
+<Callout tone="success" title="Precision Experimentation Checklist">
+  - CUPED leverages pre-period metrics to reduce noise
+  - Variance reduction ≈ faster decisions, smaller samples
+  - Sequential testing controls Type I error while allowing early stopping
+  - Combined methods enable continuous experimentation in production MLOps systems
 </Callout>
+
+<Aside tone="next">
+Next → **Chapter 6: The City Restored** — bringing it all together with continuous monitoring and guardrail automation.
+</Aside>
