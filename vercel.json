@@ -1,6 +1,8 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run build",
   "framework": "nextjs",
+  "regions": ["iad1"],
   "headers": [
     {
       "source": "/data/(.*).csv",
@@ -28,6 +30,23 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -35,5 +54,7 @@
       "source": "/",
       "destination": "/chapters/chapter-1"
     }
-  ]
+  ],
+  "trailingSlash": false,
+  "cleanUrls": true
 }

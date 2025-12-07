@@ -1,211 +1,200 @@
 ---
-title: The City's Heartbeat
-description: Production monitoring, guardrails, and observability
+title: The City Restored
+description: Continuous monitoring, guardrails, and the observability loop
 ---
 
-## Introduction
-
-DriftCity grew. The systems expanded — multiple models, dozens of features, thousands of daily decisions. A single uncaught drift event could cascade through the system. The city needed a nervous system: **monitoring dashboards** and **guardrails** that constantly watched for anomalies and halted problematic experiments or deployments.
-
-<Aside type="info">
-**Production Monitoring** combines drift detection, performance tracking, and guardrails to maintain model health at scale. Automated systems react faster than humans.
+<Aside tone="story">
+The storms have passed. The engines duel less and cooperate more. DriftCity's models no longer run blind — they live inside a continuous feedback loop that keeps learning from their world.
 </Aside>
 
-## The Problem: Scale Creates Blindness
-
-With 10 models in production, monitoring each manually becomes impossible:
-- Which models are drifting?
-- Which features matter most?
-- Which experiments are breaking guardrails?
-- What's the causal chain when performance drops?
-
-```python
-# Example: Monitoring dashboard for 10 models
-models = {
-    'demand': Model(psi_threshold=0.25, rmse_threshold=0.15),
-    'surge_pricing': Model(psi_threshold=0.2, mape_threshold=0.20),
-    'eta_prediction': Model(psi_threshold=0.3, mae_threshold=180),
-    ...  # 7 more models
-}
-
-# Manual checking: Hours of work daily
-for model in models.values():
-    psi = calculate_psi(model)
-    if psi > model.psi_threshold:
-        alert("Manual investigation required!")
-```
-
-<Callout heading="Key Insight">
-Automated monitoring saves human time but requires pre-defined guardrails. Set thresholds too strict and you'll alert constantly; too loose and you'll miss real problems.
+<Callout title="What you'll learn">
+  - How to connect monitoring, drift detection, and experimentation into a single MLOps loop
+  - How to visualize model health in production dashboards
+  - How to enforce automated guardrails and incident recovery
+  - How real companies implement continuous observability
 </Callout>
 
-### Monitoring Metrics Dashboard
+## The MLOps Feedback Loop
 
-Track these key signals for each model:
+Modern ML systems operate in **closed feedback loops**. Instead of deploying models and hoping for the best, production systems continuously monitor drift, performance, and fairness — automatically triggering retraining or rollbacks when issues arise.
 
-1. **Drift Signals**
-   - PSI (covariate drift)
-   - Feature distributions (KS test)
-   - Performance metrics (RMSE, MAPE, accuracy)
+<table>
+  <thead>
+    <tr><th>Stage</th><th>Role</th><th>Example Metric</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Ingestion</td><td>Data Quality Checks</td><td>Missing feature %</td></tr>
+    <tr><td>Monitoring</td><td>Drift Detection</td><td>PSI, KS statistic</td></tr>
+    <tr><td>Evaluation</td><td>Model Performance</td><td>RMSE, MAE, accuracy</td></tr>
+    <tr><td>Experimentation</td><td>Controlled Tests</td><td>A/B test outcomes</td></tr>
+    <tr><td>Governance</td><td>Guardrails</td><td>SLA breach, fairness gaps</td></tr>
+    <tr><td>Retraining</td><td>Continuous Learning</td><td>Model refresh pipeline</td></tr>
+  </tbody>
+</table>
 
-2. **Experiment Signals**
-   - Sample Ratio Mismatch
-   - Metric trends vs baseline
-   - Secondary metric impact
+The loop flows: **Detect drift → Diagnose → Retrain → Revalidate → Redeploy**.
 
-3. **Infrastructure Signals**
-   - Prediction latency
-   - Model serving availability
-   - Feature store freshness
+## Live Monitoring Dashboard
 
-```python
-# Automated monitoring pipeline
-class ModelMonitor:
-    def __init__(self, model_name, baseline_metrics):
-        self.model = model_name
-        self.baseline = baseline_metrics
+Track model health with unified dashboards that correlate drift and performance metrics over time:
 
-    def check_health(self, current_metrics):
-        checks = {
-            'drift': self.psi(current_metrics),
-            'performance': self.performance_degradation(current_metrics),
-            'srm': self.sample_ratio_mismatch(current_metrics),
-        }
-        return checks
+<MonitoringDashboard dataUrl="/chapters/chapter-6/fixtures/monitoring_dashboard.csv" />
 
-    def should_alert(self, checks):
-        return any(check.exceeded_threshold() for check in checks.values())
-```
+**Interpretation:**
+- **Blue line (PSI):** Measures input distribution drift. Threshold at 0.25 indicates significant shift.
+- **Orange line (RMSE):** Tracks prediction error. Increases correlate with higher drift.
+- When PSI breaches threshold, performance typically degrades — triggering automated alerts.
 
-<Figure caption="Monitoring dashboard displays drift signals, performance trends, and experiment health in real-time">
-  <div style={{
-    padding: '40px',
-    textAlign: 'center',
-    backgroundColor: 'var(--color-bg-secondary)',
-    borderRadius: 'var(--radius-md)',
-    marginBottom: 'var(--space-4)'
-  }}>
-    📊 Monitoring dashboard visualization would render here
-  </div>
-</Figure>
+The dashboard enables teams to spot degradation early and correlate drift with model errors.
 
-<Aside type="warning">
-False alerts lead to alert fatigue. Calibrate thresholds carefully using historical data and domain expertise. Too many "boy who cried wolf" situations and the team will ignore real problems.
-</Aside>
+## Drift vs Performance Relationship
 
-## Guardrails for Automatic Actions
+Does drift actually cause performance degradation? Let's examine the correlation:
 
-Rather than only alerting, sophisticated systems can take automatic actions:
+<DriftPerfScatter dataUrl="/chapters/chapter-6/fixtures/drift_signals.csv" />
 
-### Performance Guardrail Example
+**Observation:**
+The strong positive correlation confirms that covariate shifts (PSI) often precede performance degradation (RMSE). This validates monitoring drift as an early warning signal — allowing teams to retrain models before users notice quality drops.
 
-```python
-class PerformanceGuardrail:
-    def __init__(self, model, rmse_threshold=0.15, lookback_days=7):
-        self.model = model
+This correlation helps prioritize retraining: not all drift matters equally, but drift that correlates with performance issues requires immediate action.
+
+## Guardrails & Auto-Recovery
+
+Guardrails ensure systems fail safely. Rather than just alerting humans, modern ML systems take automated protective actions:
+
+<GuardrailTimeline dataUrl="/chapters/chapter-6/fixtures/guardrail_events.csv" />
+
+**Guardrail Actions:**
+- 🔵 **OK**: Model performing within acceptable bounds
+- 🟡 **Warning**: Metric breach detected, team alerted
+- 🔴 **Rollback**: Automatic revert to previous stable version
+- 🟢 **Recovered**: Model retrained and redeployed successfully
+
+**Common Guardrail Thresholds:**
+- Latency ≤ 300ms (99th percentile)
+- MAE ≤ 2.5 minutes (for ETA prediction)
+- Fairness gap ≤ 5% (across demographic groups)
+- PSI ≤ 0.25 (input drift threshold)
+
+## Implementation Code
+
+Here's how to generate monitoring data and implement basic guardrail logic:
+
+<CodeTabs
+  tabs={[
+    {
+      label: "Python: Generate monitoring data",
+      language: "python",
+      code: `import numpy as np
+import pandas as pd
+
+rng = np.random.default_rng(21)
+days = pd.date_range("2025-09-01", periods=30)
+
+# PSI gradually increases (drift emerging)
+psi = np.clip(np.linspace(0.05, 0.3, 30) + rng.normal(0, 0.01, 30), 0, 1)
+
+# RMSE correlates with PSI
+rmse = 1.8 + 4 * psi + rng.normal(0, 0.1, 30)
+
+# Create monitoring dataset
+df = pd.DataFrame({
+    "date": days,
+    "psi": psi,
+    "rmse": rmse,
+    "bias": rng.normal(0, 0.2, 30),
+    "volume": rng.integers(8000, 12000, 30)
+})
+
+df.to_csv("monitoring_dashboard.csv", index=False)
+print(f"PSI–RMSE correlation: {df[['psi','rmse']].corr().iloc[0,1]:.2f}")`
+    },
+    {
+      label: "Python: Guardrail system",
+      language: "python",
+      code: `class ModelGuardrail:
+    def __init__(self, psi_threshold=0.25, rmse_threshold=2.7):
+        self.psi_threshold = psi_threshold
         self.rmse_threshold = rmse_threshold
-        self.lookback = lookback_days
 
-    def check(self):
-        current_rmse = self.model.evaluate(last_n_days=self.lookback)
-        baseline_rmse = self.model.baseline_rmse
+    def check(self, metrics):
+        status = "ok"
 
-        degradation = (current_rmse - baseline_rmse) / baseline_rmse
+        if metrics["psi"] > self.psi_threshold:
+            status = "warn"
+            print(f"⚠️ PSI breach: {metrics['psi']:.3f} > {self.psi_threshold}")
 
-        if degradation > self.rmse_threshold:
-            return "FAIL"  # Trigger automatic rollback
-        return "PASS"
-```
+        if metrics["rmse"] > self.rmse_threshold:
+            status = "rollback"
+            print(f"🔴 RMSE breach: {metrics['rmse']:.2f} > {self.rmse_threshold}")
+            self.trigger_rollback()
 
-### Guardrail Actions
+        return status
 
-- **Automatic Rollback**: Revert to previous model version
-- **Traffic Ramp**: Reduce traffic to problematic variant
-- **Experiment Pause**: Stop underperforming A/B tests
-- **Feature Disable**: Turn off recently added features
-- **Alert Escalation**: Page on-call engineer
+    def trigger_rollback(self):
+        # Revert to previous stable model version
+        print("Rolling back to previous model version...")
+        # notify_team("Model rollback triggered")
 
-<Aside type="tip">
-**Pro Tip:** Design guardrails to be conservative. It's better to rollback a good change by mistake than miss a bad one. You can always redeploy after investigation.
-</Aside>
+# Usage
+guardrail = ModelGuardrail()
+current_metrics = {"psi": 0.28, "rmse": 2.9}
+status = guardrail.check(current_metrics)`
+    }
+  ]}
+/>
 
-## Integration: The Complete Picture
+## Real-World Implementations
 
-A production ML system ties everything together:
+<table>
+  <thead>
+    <tr><th>Company</th><th>Monitoring Stack</th><th>Guardrail Logic</th></tr>
+ </thead>
+  <tbody>
+    <tr><td><strong>Uber</strong></td><td>Michelangelo + MonStitch</td><td>Auto-drain traffic on drift or SLA breach</td></tr>
+    <tr><td><strong>Airbnb</strong></td><td>Experiment Guardrails</td><td>Blocks metric regressions in concurrent tests</td></tr>
+    <tr><td><strong>Netflix</strong></td><td>Atlas + XPGuard</td><td>Real-time anomaly detection on KPIs</td></tr>
+    <tr><td><strong>Google</strong></td><td>TFX + Vertex Pipelines</td><td>Data &amp; model drift checks before auto-promotion</td></tr>
+  </tbody>
+</table>
 
-```
-Raw Data → Feature Store → Model → Predictions → Monitoring
+These systems share common patterns:
+1. **Centralized monitoring** across all production models
+2. **Automated guardrails** with configurable thresholds
+3. **Incident response** workflows (alert → rollback → retrain)
+4. **Feedback loops** that improve model performance over time
 
-       ↓ (Drift Alert)
-    Automatic Guardrail Check
-       ↓ (Failed)
-    Rollback or Pause
-       ↓
-    Alert Engineering Team
-```
+## Key Takeaways
 
-```python
-# Example: Integrated monitoring and action
-def production_loop():
-    while True:
-        # Collect current metrics
-        metrics = collect_metrics()
-
-        # Check all guardrails
-        drift_check = drift_monitor.check(metrics)
-        perf_check = performance_guardrail.check(metrics)
-        srm_check = srm_guardrail.check(metrics)
-
-        # Take action if any failed
-        if not all([drift_check, perf_check, srm_check]):
-            if is_experiment_active():
-                pause_experiment()  # Auto-pause bad experiment
-            else:
-                rollback_model()  # Auto-rollback bad deployment
-
-            alert_team("Guardrail triggered!")
-```
-
-## Best Practices for Production Systems
-
-1. **Version Everything**: Models, features, data
-2. **Immutable Baselines**: Use fixed historical periods for comparison
-3. **Redundant Checks**: Multiple independent guardrails catch different failure modes
-4. **Explainability**: Include diagnostic info in alerts
-5. **On-Call Readiness**: Ensure team can respond quickly
-6. **Bake-off Experiments**: Always compare new versions before production
-
-<Figure caption="Drift and performance signals drive automatic actions that protect model health">
-  <div style={{
-    padding: '40px',
-    textAlign: 'center',
-    backgroundColor: 'var(--color-bg-secondary)',
-    borderRadius: 'var(--radius-md)',
-    marginBottom: 'var(--space-4)'
-  }}>
-    🛡️ Guardrail timeline visualization would render here
-  </div>
-</Figure>
-
-## Conclusion: DriftCity's Evolution
-
-From Chapter 1 (baseline distributions) through Chapter 6 (automated monitoring), we've journeyed through the complete MLOps statistical toolkit:
-
-1. **Drift Detection** (Ch1-3): Identify when data or relationships change
-2. **Experimentation** (Ch4-5): Test changes rigorously and efficiently
-3. **Production Safety** (Ch6): Monitor, alert, and protect automatically
-
-<Callout heading="The Complete MLOps Stack">
-- **Understand** your baseline (Chapter 1)
-- **Track** drift over time (Chapter 2)
-- **Catch** concept drift quickly (Chapter 3)
-- **Test** changes rigorously (Chapter 4)
-- **Optimize** experiments efficiently (Chapter 5)
-- **Automate** protection and response (Chapter 6)
+<Callout tone="success" title="Continuous Observability Checklist">
+  - Centralize metrics across drift, performance, and fairness
+  - Automate guardrail checks with alert thresholds
+  - Correlate drift with performance degradation for prioritization
+  - Trigger retraining or rollback automatically when thresholds breach
+  - Feed experiment results back into retraining → closed learning loop
 </Callout>
 
-DriftCity's systems are no longer fragile. They're observant, rigorous, and self-protecting. Your models deserve the same.
+## Bringing It All Together
 
-<Aside type="next">
-Continue building. The statistics you've learned here apply to any production ML system. Whether you're shipping models at a startup or managing thousands at a tech giant, these principles keep systems healthy and your decisions grounded in data.
+From Chapter 1 through Chapter 6, we've built a complete MLOps statistical foundation:
+
+**Chapter 1:** Established baselines and learned drift detection with PSI
+**Chapter 2:** Extended to covariate drift monitoring over time
+**Chapter 3:** Detected concept drift and performance degradation
+**Chapter 4:** Implemented rigorous A/B testing with SRM checks and power analysis
+**Chapter 5:** Optimized experiments with CUPED and sequential testing
+**Chapter 6:** Closed the loop with continuous monitoring and automated guardrails
+
+These aren't isolated techniques — they form an integrated system where:
+- Monitoring detects issues early
+- Experiments validate improvements rigorously
+- Guardrails protect production automatically
+- Feedback loops drive continuous improvement
+
+<Aside tone="story">
+The city hums quietly again. Models train, serve, and self-correct — learning not just from data, but from their own mistakes. DriftCity's systems are no longer fragile; they're observant, rigorous, and self-protecting.
 </Aside>
+
+<Callout title="Continue Building">
+The statistics you've learned here apply to any production ML system. Whether shipping models at a startup or managing thousands at a tech giant, these principles keep systems healthy and your decisions grounded in data.
+</Callout>

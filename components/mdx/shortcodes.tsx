@@ -258,6 +258,9 @@ import SRMGauge from "../plots/SRMGauge";
 import PowerCurve from "../plots/PowerCurve";
 import { CUPEDDemo } from "../plots/CUPEDDemo";
 import { SequentialChart } from "../plots/SequentialChart";
+import { MonitoringDashboard } from "../plots/MonitoringDashboard";
+import { DriftPerfScatter } from "../plots/DriftPerfScatter";
+import { GuardrailTimeline } from "../plots/GuardrailTimeline";
 
 export const mdxComponents = {
   Aside,
@@ -279,4 +282,7 @@ export const mdxComponents = {
   PowerCurve,
   CUPEDDemo,
   SequentialChart,
+  MonitoringDashboard,
+  DriftPerfScatter,
+  GuardrailTimeline,
 };

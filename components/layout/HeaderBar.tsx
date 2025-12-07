@@ -1,13 +1,21 @@
-"use client";
+import Link from "next/link";
 
 export const HeaderBar = () => {
   return (
     <header className="header-bar">
       <div className="header-content">
+        <Link href="/" className="back-link">
+          Back to Portfolio
+        </Link>
+
         <div className="header-branding">
           <h1 className="header-title">DriftCity</h1>
           <p className="header-subtitle">Statistics for MLOps</p>
         </div>
+
+        <Link href="/about" className="about-link">
+          About
+        </Link>
       </div>
 
       <style>{`
@@ -28,14 +36,33 @@ export const HeaderBar = () => {
         .header-content {
           width: 100%;
           display: flex;
-          justify-content: space-between;
           align-items: center;
+          justify-content: space-between;
+          gap: var(--space-4);
+        }
+
+        .back-link {
+          color: var(--color-blue);
+          font-weight: var(--weight-semibold);
+          text-decoration: none;
+          font-size: var(--text-sm);
+          padding: var(--space-2) var(--space-3);
+          border-radius: var(--radius-sm);
+          transition: background-color var(--duration-fast) var(--easing-ease-in-out);
+          min-width: 140px;
+        }
+
+        .back-link:hover {
+          background-color: var(--color-bg-secondary);
         }
 
         .header-branding {
           display: flex;
           flex-direction: column;
           gap: var(--space-1);
+          align-items: center;
+          text-align: center;
+          flex: 1;
         }
 
         .header-title {
@@ -54,9 +81,30 @@ export const HeaderBar = () => {
           font-weight: var(--weight-normal);
         }
 
+        .about-link {
+          color: var(--color-text);
+          font-weight: var(--weight-semibold);
+          text-decoration: none;
+          font-size: var(--text-sm);
+          padding: var(--space-2) var(--space-3);
+          border-radius: var(--radius-sm);
+          transition: background-color var(--duration-fast) var(--easing-ease-in-out),
+            color var(--duration-fast) var(--easing-ease-in-out);
+          min-width: 80px;
+        }
+
+        .about-link:hover {
+          background-color: var(--color-bg-secondary);
+          color: var(--color-blue);
+        }
+
         @media (max-width: 768px) {
           .header-bar {
             padding: 0 var(--space-4);
+          }
+
+          .back-link {
+            font-size: var(--text-xs);
           }
 
           .header-title {
@@ -64,6 +112,10 @@ export const HeaderBar = () => {
           }
 
           .header-subtitle {
+            font-size: var(--text-xs);
+          }
+
+          .about-link {
             font-size: var(--text-xs);
           }
         }
