@@ -4,7 +4,7 @@ export const HeaderBar = () => {
   return (
     <header className="header-bar">
       <div className="header-content">
-        <Link href="/" className="back-link">
+        <Link href="https://www.deepakkarkala.com/" className="back-link">
           Back to Portfolio
         </Link>
 
